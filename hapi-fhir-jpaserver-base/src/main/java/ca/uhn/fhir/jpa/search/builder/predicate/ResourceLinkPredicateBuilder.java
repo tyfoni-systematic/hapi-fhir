@@ -180,7 +180,9 @@ public class ResourceLinkPredicateBuilder extends BaseJoiningPredicateBuilder {
 					 * Handle non-chained search, e.g. Patient?organization=Organization/123
 					 */
 
+					//https://groups.google.com/g/hapi-fhir/c/lb7aaNoydgU
 					IIdType dt = new IdDt(ref.getValue());
+
 					if (dt.hasBaseUrl()) {
 						if (myDaoConfig.getTreatBaseUrlsAsLocal().contains(dt.getBaseUrl())) {
 							dt = dt.toUnqualified();
