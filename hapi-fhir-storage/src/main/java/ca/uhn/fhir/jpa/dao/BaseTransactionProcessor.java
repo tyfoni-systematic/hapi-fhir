@@ -1755,6 +1755,10 @@ public abstract class BaseTransactionProcessor {
 						continue;
 					} else if (theIdSubstitutions.containsTarget(targetId)) {
 						newId = targetId;
+					} else if (targetId.hasIdPart()) {
+						newId = targetId;
+						// FUT1-5671 workaround issue with bundle references to updated resources or unchanged resources
+						ourLog.debug(" * FUT1-5671 Handling mismatched ref {}", targetId);
 					} else {
 						throw new InternalErrorException(Msg.code(540)
 								+ "References by resource with no reference ID are not supported in DAO layer");
