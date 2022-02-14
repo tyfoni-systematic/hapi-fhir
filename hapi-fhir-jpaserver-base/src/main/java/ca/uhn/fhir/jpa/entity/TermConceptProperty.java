@@ -41,6 +41,7 @@ import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
+import javax.persistence.Index;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 
