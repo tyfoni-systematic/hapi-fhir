@@ -384,7 +384,7 @@ public class VersionSpecificWorkerContextWrapper extends I18nBase implements IWo
 				.expandValueSet(myValidationSupportContext, null, convertedSource);
 
 		ValueSet convertedResult = null;
-		if (expanded.getValueSet() != null) {
+		if (expanded != null && expanded.getValueSet() != null) {
 			try {
 				convertedResult = myVersionCanonicalizer.valueSetToValidatorCanonical(expanded.getValueSet());
 			} catch (FHIRException e) {
@@ -392,7 +392,7 @@ public class VersionSpecificWorkerContextWrapper extends I18nBase implements IWo
 			}
 		}
 
-		String error = expanded.getError();
+		String error = expanded != null ? expanded.getError() : "expandValueSet() returned null";
 		TerminologyServiceErrorClass result = null;
 
 		return new ValueSetExpansionOutcome(convertedResult, error, result, expanded.getErrorIsFromServer());
