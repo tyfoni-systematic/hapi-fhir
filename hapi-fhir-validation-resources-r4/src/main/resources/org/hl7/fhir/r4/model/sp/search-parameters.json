@@ -37587,8 +37587,7 @@
   "code": "definition",
   "base": [ "PlanDefinition" ],
   "type": "reference",
-  "expression": "PlanDefinition.action.definition",
-  "xpath": "f:PlanDefinition/f:action/f:definitionCanonical | f:PlanDefinition/f:action/f:definitionUri",
+  "expression": "PlanDefinition.repeat(action).definition",
   "xpathUsage": "normal",
   "target": [ "Questionnaire", "PlanDefinition", "ActivityDefinition" ]
  }
@@ -48924,8 +48923,8 @@
   "code": "reference",
   "base": [ "ValueSet" ],
   "type": "uri",
-  "expression": "ValueSet.compose.include.system",
-  "xpath": "f:ValueSet/f:compose/f:include/f:system",
+  "expression": "ValueSet.compose.include.system | ValueSet.compose.include.valueSet",
+  "xpath": "f:ValueSet/f:compose/f:include/f:system | f:ValueSet/f:compose/f:include/f:valueSet",
   "xpathUsage": "normal"
  }
 }, {
