@@ -1781,7 +1781,9 @@ public abstract class BaseTermReadSvcImpl implements ITermReadSvc {
 				assert valueSet != null;
 
 				ValueSetConceptAccumulator accumulator = new ValueSetConceptAccumulator(valueSetToExpand, myTermValueSetDao, myValueSetConceptDao, myValueSetConceptDesignationDao);
-				expandValueSet(null, valueSet, accumulator);
+				ValueSetExpansionOptions options = new ValueSetExpansionOptions();
+				options.setIncludeHierarchy(true);
+				expandValueSet(options, valueSet, accumulator);
 
 				// We are done with this ValueSet.
 				txTemplate.execute(t -> {
