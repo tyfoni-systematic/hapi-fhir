@@ -497,6 +497,7 @@ public class TermDeferredStorageSvcImpl implements ITermDeferredStorageSvc, IHas
 		ourLog.info("isDeferredValueSets: {}", isDeferredValueSets());
 		ourLog.info("isDeferredConceptMaps: {}", isDeferredConceptMaps());
 		ourLog.info("isDeferredCodeSystemDeletions: {}", isDeferredCodeSystemDeletions());
+		ourLog.info("isJobsExecuting: {}", isJobsExecuting());
 	}
 
 	@Override
