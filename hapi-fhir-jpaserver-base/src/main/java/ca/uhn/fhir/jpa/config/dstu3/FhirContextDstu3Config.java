@@ -27,7 +27,6 @@ import org.springframework.context.annotation.Primary;
 import static ca.uhn.fhir.jpa.config.r4.FhirContextR4Config.configureFhirContext;
 
 public class FhirContextDstu3Config {
-	@Primary
 	@Bean(name = "primaryFhirContext")
 	public FhirContext fhirContextDstu3() {
 		FhirContext retVal = FhirContext.forDstu3();

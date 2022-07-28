@@ -28,7 +28,6 @@ import static ca.uhn.fhir.jpa.config.r4.FhirContextR4Config.configureFhirContext
 
 public class FhirContextR5Config {
 	@Bean(name = "primaryFhirContext")
-	@Primary
 	public FhirContext fhirContextR5() {
 		FhirContext retVal = FhirContext.forR5();
 
