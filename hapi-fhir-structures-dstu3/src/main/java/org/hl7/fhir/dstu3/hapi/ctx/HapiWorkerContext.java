@@ -327,13 +327,15 @@ public final class HapiWorkerContext extends I18nBase implements IWorkerContext 
 			return null;
 		}
 
-		IssueSeverity severity = null;
-		if (result.getSeverity() != null) {
-			severity = IssueSeverity.fromCode(result.getSeverityCode());
-		}
-		ConceptDefinitionComponent definition = new ConceptDefinitionComponent().setCode(result.getCode());
-		return new ValidationResult(severity, result.getMessage(), definition);
-	}
+    ConceptDefinitionComponent definition = null;
+    IssueSeverity severity = null;
+    if (result.getSeverity() == null) {
+      definition = new ConceptDefinitionComponent().setCode(result.getCode());
+    } else {
+      severity = IssueSeverity.fromCode(result.getSeverityCode());
+    }
+    return new ValidationResult(severity, result.getMessage(), definition);
+  }
 
 	public static ConceptValidationOptions convertConceptValidationOptions(ValidationOptions theOptions) {
 		ConceptValidationOptions retVal = new ConceptValidationOptions();
