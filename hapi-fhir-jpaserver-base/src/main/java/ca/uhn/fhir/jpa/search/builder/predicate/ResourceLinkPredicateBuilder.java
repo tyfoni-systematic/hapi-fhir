@@ -191,8 +191,7 @@ public class ResourceLinkPredicateBuilder
 					 * Handle non-chained search, e.g. Patient?organization=Organization/123
 					 */
 
-					IIdType dt = new IdDt(ref.getBaseUrl(), ref.getResourceType(), ref.getIdPart(), null);
-
+					IIdType dt = new IdDt(ref.getValue());
 					if (dt.hasBaseUrl()) {
 						if (myStorageSettings.getTreatBaseUrlsAsLocal().contains(dt.getBaseUrl())) {
 							dt = dt.toUnqualified();
