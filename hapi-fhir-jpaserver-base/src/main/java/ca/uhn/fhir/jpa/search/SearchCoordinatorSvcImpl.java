@@ -123,6 +123,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 public class SearchCoordinatorSvcImpl implements ISearchCoordinatorSvc {
 	public static final int DEFAULT_SYNC_SIZE = 250;
 	public static final String UNIT_TEST_CAPTURE_STACK = "unit_test_capture_stack";
+	public static final int DEFAULT_QUERY_TIMEOUT = 600;
 
 	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(SearchCoordinatorSvcImpl.class);
 	private final ConcurrentHashMap<String, SearchTask> myIdToSearchTask = new ConcurrentHashMap<>();
@@ -165,6 +166,8 @@ public class SearchCoordinatorSvcImpl implements ISearchCoordinatorSvc {
 	private ISearchParamRegistry mySearchParamRegistry;
 	@Autowired
 	private SearchStrategyFactory mySearchStrategyFactory;
+
+	private int myQueryTimeout = DEFAULT_QUERY_TIMEOUT;
 
 	/**
 	 * Constructor
@@ -211,6 +214,10 @@ public class SearchCoordinatorSvcImpl implements ISearchCoordinatorSvc {
 	@VisibleForTesting
 	void setMaxMillisToWaitForRemoteResultsForUnitTest(long theMaxMillisToWaitForRemoteResults) {
 		myMaxMillisToWaitForRemoteResults = theMaxMillisToWaitForRemoteResults;
+	}
+
+	public void setQueryTimeout(int theQueryTimeout) {
+		myQueryTimeout = theQueryTimeout;
 	}
 
 	/**
@@ -982,6 +989,9 @@ public class SearchCoordinatorSvcImpl implements ISearchCoordinatorSvc {
 
 				TransactionTemplate txTemplate = new TransactionTemplate(myManagedTxManager);
 				txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+				// FUT1-8341 query should allow to run in background for longer than default transaction timeout
+				// If JTA transaction manager is eg. Atomikos, then timeout will be MIN(myQueryTimeout, com.atomikos.icatch.max_timeout)
+            txTemplate.setTimeout(myQueryTimeout);
 
 				if (myCustomIsolationSupported) {
 					txTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
