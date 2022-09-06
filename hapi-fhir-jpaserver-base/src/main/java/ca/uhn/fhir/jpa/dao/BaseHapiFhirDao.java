@@ -423,23 +423,6 @@ public abstract class BaseHapiFhirDao<T extends IBaseResource> extends BaseStora
 
 				resolvedTagDefinitions.put(key, retVal);
 			}
-			count++;
-		} while (retVal == null && count < TOTAL_TAG_READ_ATTEMPTS);
-
-		if (retVal == null) {
-			// if tag is still null,
-			// something bad must be happening
-			// - throw
-			String msg = throwables.stream()
-				.map(Throwable::getMessage)
-				.collect(Collectors.joining(", "));
-			throw new InternalErrorException(
-				Msg.code(2023)
-					+ "Tag get/create failed after "
-					+ TOTAL_TAG_READ_ATTEMPTS
-					+ " attempts with error(s): "
-					+ msg
-			);
 		}
 
 		return retVal;
