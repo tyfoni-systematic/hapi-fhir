@@ -33,8 +33,6 @@ import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.time.DateUtils;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
@@ -106,7 +104,6 @@ public class JobMaintenanceServiceImpl implements IJobMaintenanceService {
 	}
 
 	@Override
-	@Transactional(propagation = Propagation.NEVER)
 	public void runMaintenancePass() {
 
 		// NB: If you add any new logic, update the class javadoc
