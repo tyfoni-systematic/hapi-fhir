@@ -257,14 +257,14 @@ public class JpaJobPersistenceImpl implements IJobPersistence {
 		return chunks;
 	}
 
-	private void fetchChunks(String theInstanceId, boolean theIncludeData, int thePageSize, int thePageIndex, Consumer<WorkChunk> theConsumer) {
+	public void fetchChunks(String theInstanceId, boolean theIncludeData, int thePageSize, int thePageIndex, Consumer<WorkChunk> theConsumer) {
 		List<Batch2WorkChunkEntity> chunks = myWorkChunkRepository.fetchChunks(PageRequest.of(thePageIndex, thePageSize), theInstanceId);
 		for (Batch2WorkChunkEntity chunk : chunks) {
 			theConsumer.accept(toChunk(chunk, theIncludeData));
 		}
 	}
 
-	private void fetchChunksForStep(String theInstanceId, String theStepId, int thePageSize, int thePageIndex, Consumer<WorkChunk> theConsumer) {
+	public void fetchChunksForStep(String theInstanceId, String theStepId, int thePageSize, int thePageIndex, Consumer<WorkChunk> theConsumer) {
 		List<Batch2WorkChunkEntity> chunks = myWorkChunkRepository.fetchChunksForStep(PageRequest.of(thePageIndex, thePageSize), theInstanceId, theStepId);
 		for (Batch2WorkChunkEntity chunk : chunks) {
 			theConsumer.accept(toChunk(chunk, true));
