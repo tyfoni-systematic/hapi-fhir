@@ -109,12 +109,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -390,100 +386,36 @@ public abstract class BaseHapiFhirDao<T extends IBaseResource> extends BaseStora
 			retVal = resolvedTagDefinitions.get(key);
 
 			if (retVal == null) {
-				// actual DB hit(s) happen here
-				retVal = getOrCreateTag(theTagType, theScheme, theTerm, theLabel);
+				CriteriaBuilder builder = myEntityManager.getCriteriaBuilder();
+				CriteriaQuery<TagDefinition> cq = builder.createQuery(TagDefinition.class);
+				Root<TagDefinition> from = cq.from(TagDefinition.class);
+
+				if (isNotBlank(theScheme)) {
+					cq.where(
+						builder.and(
+							builder.equal(from.get("myTagType"), theTagType),
+							builder.equal(from.get("mySystem"), theScheme),
+							builder.equal(from.get("myCode"), theTerm)));
+				} else {
+					cq.where(
+						builder.and(
+							builder.equal(from.get("myTagType"), theTagType),
+							builder.isNull(from.get("mySystem")),
+							builder.equal(from.get("myCode"), theTerm)));
+				}
+
+				TypedQuery<TagDefinition> q = myEntityManager.createQuery(cq);
+				try {
+					retVal = q.getSingleResult();
+				} catch (NoResultException e) {
+					retVal = new TagDefinition(theTagType, theScheme, theTerm, theLabel);
+					myEntityManager.persist(retVal);
+				}
 
 				TransactionSynchronization sync = new AddTagDefinitionToCacheAfterCommitSynchronization(key, retVal);
 				TransactionSynchronizationManager.registerSynchronization(sync);
 
 				resolvedTagDefinitions.put(key, retVal);
-			}
-		}
-
-		return retVal;
-	}
-
-	/**
-	 * Gets the tag defined by the fed in values, or saves it if it does not
-	 * exist.
-	 * <p>
-	 * Can also throw an InternalErrorException if something bad happens.
-	 */
-	private TagDefinition getOrCreateTag(TagTypeEnum theTagType, String theScheme, String theTerm, String theLabel) {
-		CriteriaBuilder builder = myEntityManager.getCriteriaBuilder();
-		CriteriaQuery<TagDefinition> cq = builder.createQuery(TagDefinition.class);
-		Root<TagDefinition> from = cq.from(TagDefinition.class);
-
-		if (isNotBlank(theScheme)) {
-			cq.where(
-				builder.and(
-					builder.equal(from.get("myTagType"), theTagType),
-					builder.equal(from.get("mySystem"), theScheme),
-					builder.equal(from.get("myCode"), theTerm)));
-		} else {
-			cq.where(
-				builder.and(
-					builder.equal(from.get("myTagType"), theTagType),
-					builder.isNull(from.get("mySystem")),
-					builder.equal(from.get("myCode"), theTerm)));
-		}
-
-		TypedQuery<TagDefinition> q = myEntityManager.createQuery(cq);
-
-		TransactionTemplate template = new TransactionTemplate(myTransactionManager);
-		template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-
-		// this transaction will attempt to get or create the tag,
-		// repeating (on any failure) 10 times.
-		// if it fails more than this, we will throw exceptions
-		TagDefinition retVal;
-		int count = 0;
-		HashSet<Throwable> throwables = new HashSet<>();
-		do {
-			try {
-				retVal = template.execute(new TransactionCallback<TagDefinition>() {
-
-					// do the actual DB call(s) to read and/or write the values
-					private TagDefinition readOrCreate() {
-						TagDefinition val;
-						try {
-							val = q.getSingleResult();
-						} catch (NoResultException e) {
-							val = new TagDefinition(theTagType, theScheme, theTerm, theLabel);
-							myEntityManager.persist(val);
-						}
-						return val;
-					}
-
-					@Override
-					public TagDefinition doInTransaction(TransactionStatus status) {
-						TagDefinition tag = null;
-
-						try {
-							tag = readOrCreate();
-						} catch (Exception ex) {
-							// log any exceptions - just in case
-							// they may be signs of things to come...
-							ourLog.warn(
-								"Tag read/write failed: "
-									+ ex.getMessage() + ". "
-									+ "This is not a failure on its own, "
-									+ "but could be useful information in the result of an actual failure."
-							);
-							throwables.add(ex);
-						}
-
-						return tag;
-					}
-				});
-			} catch (Exception ex) {
-				// transaction template can fail if connections to db are exhausted
-				// and/or timeout
-				ourLog.warn("Transaction failed with: "
-					+ ex.getMessage() + ". "
-					+ "Transaction will rollback and be reattempted."
-				);
-				retVal = null;
 			}
 			count++;
 		} while (retVal == null && count < TOTAL_TAG_READ_ATTEMPTS);
