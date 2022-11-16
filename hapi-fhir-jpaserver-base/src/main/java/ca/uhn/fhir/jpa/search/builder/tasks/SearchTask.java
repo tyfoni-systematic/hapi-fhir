@@ -100,6 +100,7 @@ import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 public class SearchTask implements Callable<Void> {
 
 	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(SearchTask.class);
+	public static final int DEFAULT_QUERY_TIMEOUT = 600;
 
 	private final SearchParameterMap myParams;
 	private final IDao myCallingDao;
@@ -127,6 +128,7 @@ public class SearchTask implements Callable<Void> {
 	private final Integer myLoadingThrottleForUnitTests;
 
 	private boolean myCustomIsolationSupported;
+	private int myQueryTimeout = DEFAULT_QUERY_TIMEOUT;
 
 	// injected beans
 	protected final PlatformTransactionManager myManagedTxManager;
@@ -424,6 +426,9 @@ public class SearchTask implements Callable<Void> {
 
 			TransactionTemplate txTemplate = new TransactionTemplate(myManagedTxManager);
 			txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+			// FUT1-8341 query should allow to run in background for longer than default transaction timeout
+			// If JTA transaction manager is eg. Atomikos, then timeout will be MIN(myQueryTimeout, com.atomikos.icatch.max_timeout)
+			txTemplate.setTimeout(myQueryTimeout);
 
 			if (myCustomIsolationSupported) {
 				txTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
