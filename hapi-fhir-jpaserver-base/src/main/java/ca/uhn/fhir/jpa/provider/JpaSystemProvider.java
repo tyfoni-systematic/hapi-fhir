@@ -47,7 +47,7 @@ import java.util.TreeMap;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-public final class JpaSystemProvider<T, MT> extends BaseJpaSystemProvider<T, MT> {
+public class JpaSystemProvider<T, MT> extends BaseJpaSystemProvider<T, MT> {
 
 
 	@Description("Marks all currently existing resources of a given type, or all resources of all types, for reindexing.")
