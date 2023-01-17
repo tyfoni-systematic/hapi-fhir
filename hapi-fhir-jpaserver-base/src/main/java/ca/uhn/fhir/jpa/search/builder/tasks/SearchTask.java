@@ -186,9 +186,10 @@ public class SearchTask implements Callable<Void> {
 			}
 		}
 
-		if (!myCustomIsolationSupported) {
-			ourLog.warn("JPA dialect does not support transaction isolation! This can have an impact on search performance.");
-		}
+// Remove unnecessary warnings. We use Atomikos JtaTransactionManager so myCustomIsolationSupported is never set.
+//		if (!myCustomIsolationSupported) {
+//			ourLog.warn("JPA dialect does not support transaction isolation! This can have an impact on search performance.");
+//		}
 	}
 
 	/**
