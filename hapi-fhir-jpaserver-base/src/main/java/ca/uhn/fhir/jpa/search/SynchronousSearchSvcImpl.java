@@ -101,6 +101,10 @@ public class SynchronousSearchSvcImpl implements ISynchronousSearchSvc {
 		TransactionTemplate txTemplate = new TransactionTemplate(myManagedTxManager);
 		txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 		txTemplate.setReadOnly(theParams.isLoadSynchronous() || theParams.isOffsetQuery());
+		// Synchronous query should allow to run for longer than default transaction timeout
+		// This is important when query is used to fetch large resultsets eg. in batch processing (FUT1-9367)
+		// If JTA transaction manager is eg. Atomikos, then timeout will be MIN(SearchQueryTimeout, com.atomikos.icatch.max_timeout)
+		txTemplate.setTimeout(myDaoConfig.getSearchQueryTimeout());
 		return txTemplate.execute(t -> {
 
 			// Load the results synchronously
