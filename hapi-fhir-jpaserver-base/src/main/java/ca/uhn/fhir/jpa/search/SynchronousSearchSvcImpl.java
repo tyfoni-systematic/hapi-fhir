@@ -98,7 +98,7 @@ public class SynchronousSearchSvcImpl implements ISynchronousSearchSvc {
 
 		// Execute the query and make sure we return distinct results
 
-		return myTxService.withRequest(theRequestDetails).readOnly().execute(() -> {
+		return myTxService.withRequest(theRequestDetails).readOnly().withTimeout(myDaoConfig.getSearchQueryTimeout()).execute(() -> {
 
 			// Load the results synchronously
 			final List<JpaPid> pids = new ArrayList<>();
