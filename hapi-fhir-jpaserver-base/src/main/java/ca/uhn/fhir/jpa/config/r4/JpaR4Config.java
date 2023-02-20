@@ -98,26 +98,4 @@ public class JpaR4Config {
 	public ITermLoaderSvc termLoaderService(ITermDeferredStorageSvc theDeferredStorageSvc, ITermCodeSystemStorageSvc theCodeSystemStorageSvc) {
 		return new TermLoaderSvcImpl(theDeferredStorageSvc, theCodeSystemStorageSvc);
 	}
-
-	@Bean
-	public MemberMatcherR4Helper memberMatcherR4Helper(
-		@Autowired FhirContext theContext,
-		@Autowired IFhirResourceDao<Coverage> theCoverageDao,
-		@Autowired IFhirResourceDao<Patient> thePatientDao,
-		@Autowired IFhirResourceDao<Consent> theConsentDao,
-		@Autowired(required = false) IMemberMatchConsentHook theExtensionProvider
-	) {
-		return new MemberMatcherR4Helper(
-			theContext,
-			theCoverageDao,
-			thePatientDao,
-			theConsentDao,
-			theExtensionProvider
-		);
-	}
-
-	@Bean
-	public MemberMatchR4ResourceProvider memberMatchR4ResourceProvider(FhirContext theFhirContext, MemberMatcherR4Helper theMemberMatchR4Helper) {
-		return new MemberMatchR4ResourceProvider(theFhirContext, theMemberMatchR4Helper);
-	}
 }
