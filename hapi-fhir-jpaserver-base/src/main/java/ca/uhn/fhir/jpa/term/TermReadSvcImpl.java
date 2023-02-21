@@ -280,10 +280,9 @@ public class TermReadSvcImpl implements ITermReadSvc, IHasScheduledJobs {
 	// We need this bean so we can tell which mode hibernate search is running in.
 	@Autowired
 	private HibernatePropertiesProvider myHibernatePropertiesProvider;
-
-	@Autowired
-	private CachingValidationSupport myCachingValidationSupport;
-
+	//FUT1-9162 we do not use CachingValidationSupport
+//	@Autowired
+//	private CachingValidationSupport myCachingValidationSupport;
 	@Autowired
 	private VersionCanonicalizer myVersionCanonicalizer;
 
@@ -2440,7 +2439,8 @@ public class TermReadSvcImpl implements ITermReadSvc, IHasScheduledJobs {
 	private void afterValueSetExpansionStatusChange() {
 		// TODO: JA2 - Move this caching into the memorycacheservice, and only purge the
 		// relevant individual cache
-		myCachingValidationSupport.invalidateCaches();
+		//FUT1-9162 we do not use CachingValidationSupport
+//		myCachingValidationSupport.invalidateCaches();
 	}
 
 	private synchronized boolean isPreExpandingValueSets() {
