@@ -392,11 +392,14 @@ public class SearchTask implements Callable<Void> {
 			// Create an initial search in the DB and give it an ID
 			saveSearch();
 
-			myTxService
-				.withRequest(myRequest)
-				.withRequestPartitionId(myRequestPartitionId)
+//			myTxService.execute(myRequest, null, Propagation.REQUIRED, Isolation.READ_COMMITTED, ()->doSearch());
+			myTxService.withRequest(myRequest)
+				.withTransactionDetails(null)
+				.withPropagation(Propagation.REQUIRED)
 				.withIsolation(Isolation.READ_COMMITTED)
-				.execute(() -> doSearch());
+				.onRollback(null)
+				.withTimeout(myStorageSettings.getSearchQueryTimeout())
+				.execute(()->doSearch());
 
 			mySearchRuntimeDetails.setSearchStatus(mySearch.getStatus());
 			if (mySearch.getStatus() == SearchStatusEnum.FINISHED) {
