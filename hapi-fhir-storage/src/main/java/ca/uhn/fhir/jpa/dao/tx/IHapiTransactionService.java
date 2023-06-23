@@ -102,6 +102,8 @@ public interface IHapiTransactionService {
 
 		IExecutionBuilder readOnly();
 
+		IExecutionBuilder withTimeout(int timeout);
+
 		IExecutionBuilder onRollback(Runnable theOnRollback);
 
 		void execute(Runnable theTask);
