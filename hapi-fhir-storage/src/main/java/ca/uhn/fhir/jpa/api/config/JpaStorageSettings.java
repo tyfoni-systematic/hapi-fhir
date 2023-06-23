@@ -354,6 +354,15 @@ public class JpaStorageSettings extends StorageSettings {
 			DEFAULT_PREVENT_INVALIDATING_CONDITIONAL_MATCH_CRITERIA;
 
 	/**
+	 * Since 6.2.0-sse1
+	 * FUT1-8341 query should allow to run in background for longer than default transaction timeout
+	 * - If JTA transaction manager is eg. Atomikos, then timeout will be MIN(myQueryTimeout, com.atomikos.icatch.max_timeout)
+	 */
+	private final static int DEFAULT_QUERY_TIMEOUT = 600;
+	private int mySearchQueryTimeout = DEFAULT_QUERY_TIMEOUT;
+
+
+	/**
 	 * This setting helps to enforce a threshold in number of resolved resources for DELETE by URL REST calls
 	 *
 	 * @since 7.2.0
@@ -2515,6 +2524,20 @@ public class JpaStorageSettings extends StorageSettings {
 
 	public void setRestDeleteByUrlResourceIdThreshold(long theRestDeleteByUrlResourceIdThreshold) {
 		myRestDeleteByUrlResourceIdThreshold = theRestDeleteByUrlResourceIdThreshold;
+	}
+
+	/**
+	 * FUT1-8341 query should allow to run in background for longer than default transaction timeout
+	 * - If JTA transaction manager is eg. Atomikos, then timeout will be MIN(mySearchQueryTimeout, com.atomikos.icatch.max_timeout)
+	 *
+	 * @since 6.2.0-sse1
+	 */
+	public int getSearchQueryTimeout()               {
+		return mySearchQueryTimeout;
+	}
+
+	public void setSearchQueryTimeout(int theSearchQueryTimeout) {
+		mySearchQueryTimeout = theSearchQueryTimeout;
 	}
 
 	public enum StoreMetaSourceInformationEnum {

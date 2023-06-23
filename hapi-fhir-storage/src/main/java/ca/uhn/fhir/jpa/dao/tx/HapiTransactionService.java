@@ -63,6 +63,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
+import static org.springframework.transaction.TransactionDefinition.TIMEOUT_DEFAULT;
+
 /**
  * @see IHapiTransactionService for an explanation of this class
  */
@@ -445,6 +447,10 @@ public class HapiTransactionService implements IHapiTransactionService {
 				txTemplate.setReadOnly(true);
 			}
 
+			if (theExecutionBuilder.myTimeout != TIMEOUT_DEFAULT) {
+				txTemplate.setTimeout(theExecutionBuilder.myTimeout);
+			}
+
 			return txTemplate.execute(theCallback);
 		} catch (MyException e) {
 			if (e.getCause() instanceof RuntimeException) {
@@ -464,6 +470,8 @@ public class HapiTransactionService implements IHapiTransactionService {
 		private TransactionDetails myTransactionDetails;
 		private Runnable myOnRollback;
 		protected RequestPartitionId myRequestPartitionId;
+		private RequestPartitionId myRequestPartitionId;
+		private int myTimeout = TIMEOUT_DEFAULT;
 
 		protected ExecutionBuilder(RequestDetails theRequestDetails) {
 			myRequestDetails = theRequestDetails;
@@ -500,6 +508,12 @@ public class HapiTransactionService implements IHapiTransactionService {
 		@Override
 		public ExecutionBuilder readOnly() {
 			myReadOnly = true;
+			return this;
+		}
+
+		@Override
+		public ExecutionBuilder withTimeout(int timeout) {
+			myTimeout = timeout;
 			return this;
 		}
 
