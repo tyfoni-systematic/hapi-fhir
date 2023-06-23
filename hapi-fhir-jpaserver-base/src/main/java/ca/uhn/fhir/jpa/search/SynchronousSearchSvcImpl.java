@@ -104,6 +104,7 @@ public class SynchronousSearchSvcImpl implements ISynchronousSearchSvc {
 			.withRequest(theRequestDetails)
 			.withRequestPartitionId(theRequestPartitionId)
 			.readOnly()
+			.withTimeout(myStorageSettings.getSearchQueryTimeout())
 			.execute(() -> {
 
 			// Load the results synchronously
