@@ -817,7 +817,9 @@ public abstract class BaseHapiFhirDao<T extends IBaseResource> extends BaseStora
 
 		});
 
+		// ( https://github.com/hapifhir/hapi-fhir/issues/5066 ) - results in validation error when creating resource through transaction bundle
 		// Update the resource to contain the old tags
+		/*
 		allTagsOld.forEach(tag -> {
 			IBaseCoding iBaseCoding = theResource.getMeta()
 				.addTag()
@@ -828,6 +830,7 @@ public abstract class BaseHapiFhirDao<T extends IBaseResource> extends BaseStora
 					iBaseCoding.setUserSelected(tag.getTag().getUserSelected());
 				}
 		});
+		*/
 
 		theEntity.setHasTags(!allTagsNew.isEmpty());
 		return !allTagsOld.equals(allTagsNew);
