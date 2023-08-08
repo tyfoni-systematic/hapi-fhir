@@ -900,6 +900,11 @@ public class RestfulServerUtils {
 		// Determine response encoding
 		ResponseEncoding responseEncoding = RestfulServerUtils.determineResponseEncodingNoDefault(theRequestDetails, theServer.getDefaultResponseEncoding());
 
+		// Workaround for returning correct CarePlan resource reference from PlanDefinition/$apply operation
+		if  ("$apply".equals(theRequestDetails.getOperation()) && "PlanDefinition".equals(theRequestDetails.getResourceName())) {
+			theOperationResourceId = theResource.getIdElement();
+		}
+
 		String serverBase = theRequestDetails.getFhirServerBase();
 		IIdType fullId = null;
 		if (theOperationResourceId != null) {
