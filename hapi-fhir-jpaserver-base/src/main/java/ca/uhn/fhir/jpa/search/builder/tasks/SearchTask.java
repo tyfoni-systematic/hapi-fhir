@@ -447,19 +447,11 @@ public class SearchTask implements Callable<Void> {
 			myTxService.withRequest(myRequest)
 				.withTransactionDetails(null)
 				.withPropagation(Propagation.REQUIRED)
-				.withIsolation(Isolation.READ_COMMITTED)
-				.onRollback(null)
-				.withTimeout(myStorageSettings.getSearchQueryTimeout())
-				.execute(this::doSearch);
-
-			myTxService.withRequest(myRequest)
-				.withTransactionDetails(null)
-				.withPropagation(Propagation.REQUIRED)
 				.withRequestPartitionId(myRequestPartitionId)
 				.withIsolation(Isolation.READ_COMMITTED)
 				.onRollback(null)
 				.withTimeout(myStorageSettings.getSearchQueryTimeout())
-				.execute(()->doSearch());
+				.execute(this::doSearch);
 
 			mySearchRuntimeDetails.setSearchStatus(mySearch.getStatus());
 			if (mySearch.getStatus() == SearchStatusEnum.FINISHED) {
