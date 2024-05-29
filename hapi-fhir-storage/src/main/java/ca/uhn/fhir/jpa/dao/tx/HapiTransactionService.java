@@ -457,7 +457,6 @@ public class HapiTransactionService implements IHapiTransactionService {
 		private TransactionDetails myTransactionDetails;
 		private Runnable myOnRollback;
 		protected RequestPartitionId myRequestPartitionId;
-		private RequestPartitionId myRequestPartitionId;
 		private int myTimeout = TIMEOUT_DEFAULT;
 
 		protected ExecutionBuilder(RequestDetails theRequestDetails) {

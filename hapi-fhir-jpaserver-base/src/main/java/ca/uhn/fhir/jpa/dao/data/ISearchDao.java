@@ -20,7 +20,8 @@
 package ca.uhn.fhir.jpa.dao.data;
 
 import ca.uhn.fhir.jpa.entity.Search;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -29,8 +30,6 @@ import org.springframework.data.repository.query.Param;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Stream;
 
 public interface ISearchDao extends JpaRepository<Search, Long>, IHapiFhirJpaRepository {
 
@@ -39,12 +38,10 @@ public interface ISearchDao extends JpaRepository<Search, Long>, IHapiFhirJpaRep
 
 	@Query(
 			"SELECT s.myId FROM Search s WHERE (s.myCreated < :cutoff) AND (s.myExpiryOrNull IS NULL OR s.myExpiryOrNull < :now) AND (s.myDeleted IS NULL OR s.myDeleted = FALSE)")
-	Stream<Long> findWhereCreatedBefore(@Param("cutoff") Date theCutoff, @Param("now") Date theNow);
+	Slice<Long> findWhereCreatedBefore(@Param("cutoff") Date theCutoff, @Param("now") Date theNow, Pageable thePage);
 
-	@Query("SELECT new ca.uhn.fhir.jpa.dao.data.SearchIdAndResultSize(" + "s.myId, "
-			+ "(select max(sr.myOrder) as maxOrder from SearchResult sr where sr.mySearchPid = s.myId)) "
-			+ "FROM Search s WHERE s.myDeleted = TRUE")
-	Stream<SearchIdAndResultSize> findDeleted();
+	@Query("SELECT s.myId FROM Search s WHERE s.myDeleted = TRUE")
+	Slice<Long> findDeleted(Pageable thePage);
 
 	@Query(
 			"SELECT s FROM Search s WHERE s.myResourceType = :type AND s.mySearchQueryStringHash = :hash AND (s.myCreated > :cutoff) AND s.myDeleted = FALSE AND s.myStatus <> 'FAILED'")
@@ -57,15 +54,10 @@ public interface ISearchDao extends JpaRepository<Search, Long>, IHapiFhirJpaRep
 	int countDeleted();
 
 	@Modifying
-	@Query("UPDATE Search s SET s.myDeleted = :deleted WHERE s.myId in (:pids)")
-	@CanIgnoreReturnValue
-	int updateDeleted(@Param("pids") Set<Long> thePid, @Param("deleted") boolean theDeleted);
+	@Query("UPDATE Search s SET s.myDeleted = :deleted WHERE s.myId = :pid")
+	void updateDeleted(@Param("pid") Long thePid, @Param("deleted") boolean theDeleted);
 
 	@Modifying
 	@Query("DELETE FROM Search s WHERE s.myId = :pid")
 	void deleteByPid(@Param("pid") Long theId);
-
-	@Modifying
-	@Query("DELETE FROM Search s WHERE s.myId in (:pids)")
-	void deleteByPids(@Param("pids") Collection<Long> theSearchToDelete);
 }

@@ -902,7 +902,8 @@ public class RestfulServerUtils {
 				theRequestDetails, theServer.getDefaultResponseEncoding());
 
 		// Workaround for returning correct CarePlan resource reference from PlanDefinition/$apply operation
-		if  ("$apply".equals(theRequestDetails.getOperation()) && "PlanDefinition".equals(theRequestDetails.getResourceName())) {
+		if ("$apply".equals(theRequestDetails.getOperation())
+				&& "PlanDefinition".equals(theRequestDetails.getResourceName())) {
 			theOperationResourceId = theResource.getIdElement();
 		}
 
