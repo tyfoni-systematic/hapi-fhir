@@ -21,7 +21,6 @@ package ca.uhn.fhir.jpa.config.dstu3;
 
 import ca.uhn.fhir.context.FhirContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 
 import static ca.uhn.fhir.jpa.config.r4.FhirContextR4Config.configureFhirContext;
 
