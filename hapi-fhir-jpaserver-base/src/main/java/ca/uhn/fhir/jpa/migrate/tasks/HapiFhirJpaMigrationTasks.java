@@ -746,18 +746,27 @@ public class HapiFhirJpaMigrationTasks extends BaseMigrationTasks<VersionEnum> {
 		Builder.BuilderWithTableName workChunkTable = version.onTable("BT2_WORK_CHUNK");
 
 		workChunkTable
-				.addIndex("20240321.1", "IDX_BT2WC_II_SI_S_SEQ_ID")
-				.unique(false)
-				.withColumns("INSTANCE_ID", "TGT_STEP_ID", "STAT", "SEQ", "ID");
+			.addIndex("20240321.1", "IDX_BT2WC_II_SI_S_SEQ_ID")
+			.unique(false)
+			.withColumns("INSTANCE_ID", "TGT_STEP_ID", "STAT", "SEQ", "ID");
 
 		// add columns to Batch2WorkChunkEntity
 		Builder.BuilderWithTableName batch2WorkChunkTable = version.onTable("BT2_WORK_CHUNK");
 
 		batch2WorkChunkTable
-				.addColumn("20240322.1", "NEXT_POLL_TIME")
-				.nullable()
-				.type(ColumnTypeEnum.DATE_TIMESTAMP);
+			.addColumn("20240322.1", "NEXT_POLL_TIME")
+			.nullable()
+			.type(ColumnTypeEnum.DATE_TIMESTAMP);
 		batch2WorkChunkTable.addColumn("20240322.2", "POLL_ATTEMPTS").nullable().type(ColumnTypeEnum.INT);
+
+		// FUT1-15876 when target resource is not local, we need TARGET_RESOURCE_URL to be the leading column
+		Builder.BuilderWithTableName linkTable = version.onTable("HFJ_RES_LINK");
+		linkTable
+			.addIndex("20240806.1", "IDX_RL_TGT_URL_v2")
+			.unique(false)
+			.online(true)
+			.withColumns(
+				"TARGET_RESOURCE_URL", "SRC_PATH", "SRC_RESOURCE_ID", "TARGET_RESOURCE_TYPE", "PARTITION_ID");
 	}
 
 	private void init680_Part2() {
@@ -765,37 +774,37 @@ public class HapiFhirJpaMigrationTasks extends BaseMigrationTasks<VersionEnum> {
 
 		// Add additional LOB migration columns
 		version.onTable("BT2_JOB_INSTANCE")
-				.addColumn("20240227.1", "REPORT_VC")
-				.nullable()
-				.type(ColumnTypeEnum.TEXT);
+			.addColumn("20240227.1", "REPORT_VC")
+			.nullable()
+			.type(ColumnTypeEnum.TEXT);
 		version.onTable("BT2_JOB_INSTANCE")
-				.addColumn("20240227.2", "PARAMS_JSON_VC")
-				.nullable()
-				.type(ColumnTypeEnum.TEXT);
+			.addColumn("20240227.2", "PARAMS_JSON_VC")
+			.nullable()
+			.type(ColumnTypeEnum.TEXT);
 
 		version.onTable("BT2_WORK_CHUNK")
-				.addColumn("20240227.3", "CHUNK_DATA_VC")
-				.nullable()
-				.type(ColumnTypeEnum.TEXT);
+			.addColumn("20240227.3", "CHUNK_DATA_VC")
+			.nullable()
+			.type(ColumnTypeEnum.TEXT);
 
 		version.onTable("HFJ_SEARCH")
-				.addColumn("20240227.4", "SEARCH_QUERY_STRING_VC")
-				.nullable()
-				.type(ColumnTypeEnum.TEXT);
+			.addColumn("20240227.4", "SEARCH_QUERY_STRING_VC")
+			.nullable()
+			.type(ColumnTypeEnum.TEXT);
 		version.onTable("HFJ_SEARCH")
-				.addColumn("20240227.5", "SEARCH_PARAM_MAP_BIN")
-				.nullable()
-				.type(ColumnTypeEnum.BINARY);
+			.addColumn("20240227.5", "SEARCH_PARAM_MAP_BIN")
+			.nullable()
+			.type(ColumnTypeEnum.BINARY);
 
 		version.onTable("HFJ_BLK_IMPORT_JOBFILE")
-				.addColumn("20240227.6", "JOB_CONTENTS_VC")
-				.nullable()
-				.type(ColumnTypeEnum.TEXT);
+			.addColumn("20240227.6", "JOB_CONTENTS_VC")
+			.nullable()
+			.type(ColumnTypeEnum.TEXT);
 
 		version.onTable("HFJ_BLK_IMPORT_JOBFILE")
-				.modifyColumn("20240227.7", "JOB_CONTENTS")
-				.nullable()
-				.withType(ColumnTypeEnum.BLOB);
+			.modifyColumn("20240227.7", "JOB_CONTENTS")
+			.nullable()
+			.withType(ColumnTypeEnum.BLOB);
 	}
 
 	protected void init680() {

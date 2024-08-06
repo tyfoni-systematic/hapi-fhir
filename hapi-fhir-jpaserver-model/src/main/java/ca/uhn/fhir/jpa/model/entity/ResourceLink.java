@@ -56,7 +56,11 @@ import java.util.Date;
 			// in separate block.
 			@Index(
 					name = "IDX_RL_TGT_v2",
-					columnList = "TARGET_RESOURCE_ID, SRC_PATH, SRC_RESOURCE_ID, TARGET_RESOURCE_TYPE,PARTITION_ID")
+					columnList = "TARGET_RESOURCE_ID, SRC_PATH, SRC_RESOURCE_ID, TARGET_RESOURCE_TYPE,PARTITION_ID"),
+			// FUT1-15876 when target resource is not local, we need TARGET_RESOURCE_URL to be the leading column
+			@Index(
+					name = "IDX_RL_TGT_URL_v2",
+					columnList = "TARGET_RESOURCE_URL, SRC_PATH, SRC_RESOURCE_ID, TARGET_RESOURCE_TYPE,PARTITION_ID")
 		})
 public class ResourceLink extends BaseResourceIndex {
 
