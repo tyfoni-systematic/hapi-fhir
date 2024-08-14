@@ -84,6 +84,7 @@ import ca.uhn.fhir.model.api.TagList;
 import ca.uhn.fhir.model.base.composite.BaseCodingDt;
 import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.parser.DataFormatException;
+import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.api.Constants;
 import ca.uhn.fhir.rest.api.InterceptorInvocationTimingEnum;
 import ca.uhn.fhir.rest.api.RestOperationTypeEnum;
@@ -177,7 +178,7 @@ import static org.apache.commons.lang3.StringUtils.trim;
 @SuppressWarnings("WeakerAccess")
 @Repository
 public abstract class BaseHapiFhirDao<T extends IBaseResource> extends BaseStorageResourceDao<T>
-		implements IDao, IJpaDao<T>, ApplicationContextAware {
+	implements IDao, IJpaDao<T>, ApplicationContextAware {
 
 	public static final long INDEX_STATUS_INDEXED = 1L;
 	public static final long INDEX_STATUS_INDEXING_FAILED = 2L;
@@ -483,8 +484,31 @@ public abstract class BaseHapiFhirDao<T extends IBaseResource> extends BaseStora
 			retVal = resolvedTagDefinitions.get(key);
 
 			if (retVal == null) {
-				// actual DB hit(s) happen here
-				retVal = getOrCreateTag(theTagType, theScheme, theTerm, theLabel, theVersion, theUserSelected);
+				CriteriaBuilder builder = myEntityManager.getCriteriaBuilder();
+				CriteriaQuery<TagDefinition> cq = builder.createQuery(TagDefinition.class);
+				Root<TagDefinition> from = cq.from(TagDefinition.class);
+
+				if (isNotBlank(theScheme)) {
+					cq.where(
+						builder.and(
+							builder.equal(from.get("myTagType"), theTagType),
+							builder.equal(from.get("mySystem"), theScheme),
+							builder.equal(from.get("myCode"), theTerm)));
+				} else {
+					cq.where(
+						builder.and(
+							builder.equal(from.get("myTagType"), theTagType),
+							builder.isNull(from.get("mySystem")),
+							builder.equal(from.get("myCode"), theTerm)));
+				}
+
+				TypedQuery<TagDefinition> q = myEntityManager.createQuery(cq);
+				try {
+					retVal = q.getSingleResult();
+				} catch (NoResultException e) {
+					retVal = new TagDefinition(theTagType, theScheme, theTerm, theLabel);
+					myEntityManager.persist(retVal);
+				}
 
 				TransactionSynchronization sync = new AddTagDefinitionToCacheAfterCommitSynchronization(key, retVal);
 				TransactionSynchronizationManager.registerSynchronization(sync);
