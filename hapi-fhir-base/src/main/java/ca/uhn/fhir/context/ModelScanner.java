@@ -467,7 +467,18 @@ class ModelScanner {
 				if (theResourceDef.isStandardType()) {
 					String name = searchParam.name();
 					url = toCanonicalSearchParameterUri(theResourceDef, name);
+				} else {
+					// FUT1-15405 make composite search work - params must have an url if they are used in composite
+					String name = searchParam.name();
+					url = toCanonicalSearchParameterUri(theResourceDef, name);
+					ourLog.trace(
+							"Assigned url {} to search param {} on resource type {} with class {}",
+							url,
+							name,
+							theResourceDef.getName(),
+							theResourceDef.getImplementingClass().getSimpleName());
 				}
+
 				RuntimeSearchParam param = new RuntimeSearchParam(
 						null,
 						url,
