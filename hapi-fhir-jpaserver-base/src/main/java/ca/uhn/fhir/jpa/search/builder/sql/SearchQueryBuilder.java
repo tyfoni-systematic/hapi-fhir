@@ -47,14 +47,17 @@ import ca.uhn.fhir.jpa.search.builder.predicate.UriPredicateBuilder;
 import ca.uhn.fhir.rest.param.DateParam;
 import ca.uhn.fhir.rest.param.DateRangeParam;
 import ca.uhn.fhir.rest.param.ParamPrefixEnum;
+import com.healthmarketscience.common.util.AppendableExt;
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.ComboCondition;
 import com.healthmarketscience.sqlbuilder.ComboExpression;
 import com.healthmarketscience.sqlbuilder.Condition;
+import com.healthmarketscience.sqlbuilder.Converter;
 import com.healthmarketscience.sqlbuilder.FunctionCall;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.OrderObject;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
+import com.healthmarketscience.sqlbuilder.SqlObject;
 import com.healthmarketscience.sqlbuilder.dbspec.Join;
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbColumn;
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbJoin;
@@ -68,6 +71,7 @@ import org.hibernate.engine.spi.RowSelection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -882,7 +886,49 @@ public class SearchQueryBuilder {
 			sortColumnNameBuilder.append(sortColumnName).append(direction);
 			mySelect.addCustomOrderings(sortColumnNameBuilder.toString());
 		} else {
-			addSort(theTheColumnValueNormalized, theTheAscending, theNullOrder, theUseAggregate);
+//			addSort(theTheColumnValueNormalized, theTheAscending, theNullOrder, theUseAggregate);
+			// raised as bug: Sorting strings with Danish (and properly other languages) letters does not work #6350
+			addSSESort(theTheColumnValueNormalized, theTheAscending, theNullOrder, theUseAggregate);
+		}
+	}
+
+	private void addSSESort(
+		DbColumn theTheColumnValueNormalized,
+		boolean theTheAscending,
+		OrderObject.NullOrder theNullOrder,
+		boolean theUseAggregate) {
+		OrderObject.Dir direction = theTheAscending ? OrderObject.Dir.ASCENDING : OrderObject.Dir.DESCENDING;
+		Object columnToOrder = theTheColumnValueNormalized;
+		if (theUseAggregate) {
+			if (theTheAscending) {
+				columnToOrder = FunctionCall.min().addColumnParams(theTheColumnValueNormalized);
+			} else {
+				columnToOrder = FunctionCall.max().addColumnParams(theTheColumnValueNormalized);
+			}
+		}
+		OrderObject orderObject = new SSEOrderObject(direction, theNullOrder, columnToOrder);
+		mySelect.addCustomOrderings(orderObject);
+	}
+
+	private class SSEOrderObject extends OrderObject {
+		private final Dir _dir;
+		private final SqlObject _obj;
+		private NullOrder _nullOrder;
+
+		public SSEOrderObject(Dir dir, OrderObject.NullOrder nullOrder, Object obj) {
+			super(dir, obj);
+			setNullOrder(nullOrder);
+			this._dir = dir;
+			this._obj = Converter.toCustomColumnSqlObject(obj);
+			this._nullOrder = nullOrder;
+		}
+
+		@Override
+		public void appendTo(AppendableExt app) throws IOException {
+			app.append(this._obj).append(" COLLATE \"da-DK-x-icu\" ").append(this._dir);
+			if (this._nullOrder != null) {
+				app.append(" NULLS").append(this._nullOrder);
+			}
 		}
 	}
 

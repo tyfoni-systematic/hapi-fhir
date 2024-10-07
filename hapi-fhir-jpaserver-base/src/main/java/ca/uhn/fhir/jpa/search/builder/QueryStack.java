@@ -409,7 +409,7 @@ public class QueryStack {
 
 		addSortCustomJoin(firstPredicateBuilder, stringPredicateBuilder, hashIdentityPredicate);
 
-		mySqlBuilder.addSortString(stringPredicateBuilder.getColumnValueNormalized(), theAscending, myUseAggregate);
+		mySqlBuilder.addSortString(stringPredicateBuilder.getColumnValueExact(), theAscending, myUseAggregate);
 	}
 
 	public void addSortOnToken(String theResourceName, String theParamName, boolean theAscending) {
