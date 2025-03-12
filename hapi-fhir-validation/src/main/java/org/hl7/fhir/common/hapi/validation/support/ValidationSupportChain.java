@@ -258,6 +258,15 @@ public class ValidationSupportChain implements IValidationSupport {
 		myName = theName;
 	}
 
+	/**
+	 * FUT1-17898 upgrade to hapi-fhir 8.0.0 - add a method to get the expiring cache
+	 * We need to expose the cache (package private) so that we can invalidate it based on notification from terminology services
+	 */
+	Cache<BaseKey<?>, Object> getExpiringCache() {
+		return myExpiringCache;
+	}
+
+
 	@PostConstruct
 	public void start() {
 		if (myMetrics == null) {
