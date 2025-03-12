@@ -354,7 +354,7 @@ public class VersionSpecificWorkerContextWrapper extends I18nBase implements IWo
 		}
 
 		String error = expanded != null ? expanded.getError() : "expandValueSet() returned null";
-		ValueSetExpander.TerminologyServiceErrorClass result = null;
+		TerminologyServiceErrorClass result = null;
 
 		return new ValueSetExpansionOutcome(convertedResult, error, result, expanded.getErrorIsFromServer());
 	}
