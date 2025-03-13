@@ -388,7 +388,8 @@ public class JpaStorageSettings extends StorageSettings {
 	 * FUT1-8341 query should allow to run in background for longer than default transaction timeout
 	 * - If JTA transaction manager is eg. Atomikos, then timeout will be MIN(myQueryTimeout, com.atomikos.icatch.max_timeout)
 	 */
-	private final static int DEFAULT_QUERY_TIMEOUT = 600;
+	private static final int DEFAULT_QUERY_TIMEOUT = 600;
+
 	private int mySearchQueryTimeout = DEFAULT_QUERY_TIMEOUT;
 
 	/**
@@ -2690,7 +2691,7 @@ public class JpaStorageSettings extends StorageSettings {
 	 *
 	 * @since 6.2.0-sse1
 	 */
-	public int getSearchQueryTimeout()               {
+	public int getSearchQueryTimeout() {
 		return mySearchQueryTimeout;
 	}
 
