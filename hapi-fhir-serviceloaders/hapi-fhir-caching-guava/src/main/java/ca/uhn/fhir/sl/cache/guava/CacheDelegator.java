@@ -25,6 +25,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
@@ -98,5 +99,10 @@ public class CacheDelegator<K, V> implements ca.uhn.fhir.sl.cache.Cache<K, V> {
 	@Override
 	public void cleanUp() {
 		cache.cleanUp();
+	}
+
+	@Override
+	public ConcurrentMap<K, V> asMap() {
+		return cache.asMap();
 	}
 }

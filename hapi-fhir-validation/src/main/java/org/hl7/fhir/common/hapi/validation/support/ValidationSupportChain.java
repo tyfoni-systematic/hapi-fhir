@@ -266,7 +266,6 @@ public class ValidationSupportChain implements IValidationSupport {
 		return myExpiringCache;
 	}
 
-
 	@PostConstruct
 	public void start() {
 		if (myMetrics == null) {
@@ -1072,6 +1071,10 @@ public class ValidationSupportChain implements IValidationSupport {
 
 		@Override
 		public abstract int hashCode();
+
+		public boolean matchUrl(String url) {
+			return false;
+		}
 	}
 
 	static class ExpandValueSetKey extends BaseKey<ValueSetExpansionOutcome> {
@@ -1101,6 +1104,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		@Override
 		public int hashCode() {
 			return myHashCode;
+		}
+
+		@Override
+		public boolean matchUrl(String url) {
+			return myUrl.equals(url);
 		}
 	}
 
@@ -1164,6 +1172,11 @@ public class ValidationSupportChain implements IValidationSupport {
 			return myHashCode;
 		}
 
+		@Override
+		public boolean matchUrl(String url) {
+			return myUrl.equals(url);
+		}
+
 		private enum TypeEnum {
 			CODESYSTEM,
 			VALUESET,
@@ -1221,6 +1234,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		public int hashCode() {
 			return myHashCode;
 		}
+
+		@Override
+		public boolean matchUrl(String url) {
+			return myValueSetUrl.equals(url);
+		}
 	}
 
 	static class IsCodeSystemSupportedKey extends BaseKey<Boolean> {
@@ -1248,6 +1266,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		public int hashCode() {
 			return myHashCode;
 		}
+
+		@Override
+		public boolean matchUrl(String url) {
+			return myCodeSystemUrl.equals(url);
+		}
 	}
 
 	static class LookupCodeKey extends BaseKey<LookupCodeResult> {
@@ -1272,6 +1295,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		public int hashCode() {
 			return myHashCode;
 		}
+
+		@Override
+		public boolean matchUrl(String url) {
+			return myRequest.getSystem().equals(url);
+		}
 	}
 
 	static class TranslateConceptKey extends BaseKey<TranslateConceptResults> {
@@ -1295,6 +1323,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		@Override
 		public int hashCode() {
 			return myHashCode;
+		}
+
+		@Override
+		public boolean matchUrl(String url) {
+			return myRequest.getConceptMapUrl().equals(url);
 		}
 	}
 
@@ -1336,6 +1369,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		public int hashCode() {
 			return myHashCode;
 		}
+
+		@Override
+		public boolean matchUrl(String url) {
+			return myValueSetUrl.equals(url) || mySystem.equals(url);
+		}
 	}
 
 	/**
@@ -1343,7 +1381,7 @@ public class ValidationSupportChain implements IValidationSupport {
 	 * because we want to use it as a method parameter value, and compare instances of
 	 * it with null. Both of these things generate warnings in various linters.
 	 */
-	private static class CacheValue<T> {
+	static class CacheValue<T> {
 
 		private static final CacheValue<CodeValidationResult> EMPTY = new CacheValue<>(null);
 
