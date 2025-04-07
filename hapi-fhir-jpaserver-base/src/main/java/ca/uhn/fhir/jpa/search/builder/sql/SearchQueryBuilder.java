@@ -59,6 +59,7 @@ import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.OrderObject;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.SqlObject;
+import com.healthmarketscience.sqlbuilder.dbspec.Column;
 import com.healthmarketscience.sqlbuilder.dbspec.Join;
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbColumn;
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbJoin;
@@ -988,17 +989,17 @@ public class SearchQueryBuilder {
 			sortColumnNameBuilder.append(sortColumnName).append(direction);
 			mySelect.addCustomOrderings(sortColumnNameBuilder.toString());
 		} else {
-//			addSort(theTheColumnValueNormalized, theTheAscending, theNullOrder, theUseAggregate);
+			//			addSort(theTheColumnValueNormalized, theTheAscending, theNullOrder, theUseAggregate);
 			// raised as bug: Sorting strings with Danish (and properly other languages) letters does not work #6350
 			addSSESort(theTheColumnValueNormalized, theTheAscending, theNullOrder, theUseAggregate);
 		}
 	}
 
 	private void addSSESort(
-		DbColumn theTheColumnValueNormalized,
-		boolean theTheAscending,
-		OrderObject.NullOrder theNullOrder,
-		boolean theUseAggregate) {
+			DbColumn theTheColumnValueNormalized,
+			boolean theTheAscending,
+			OrderObject.NullOrder theNullOrder,
+			boolean theUseAggregate) {
 		OrderObject.Dir direction = theTheAscending ? OrderObject.Dir.ASCENDING : OrderObject.Dir.DESCENDING;
 		Object columnToOrder = theTheColumnValueNormalized;
 		if (theUseAggregate) {
@@ -1027,7 +1028,12 @@ public class SearchQueryBuilder {
 
 		@Override
 		public void appendTo(AppendableExt app) throws IOException {
-			app.append(this._obj).append(" COLLATE \"da-DK-x-icu\" ").append(this._dir);
+			if (_obj instanceof Column) {
+				Column col = (Column) _obj;
+				if (col.getTypeNameSQL().toUpperCase().contains("CHAR")) {
+					app.append(this._obj).append(" COLLATE \"da-DK-x-icu\" ").append(this._dir);
+				}
+			}
 			if (this._nullOrder != null) {
 				app.append(" NULLS").append(this._nullOrder);
 			}
