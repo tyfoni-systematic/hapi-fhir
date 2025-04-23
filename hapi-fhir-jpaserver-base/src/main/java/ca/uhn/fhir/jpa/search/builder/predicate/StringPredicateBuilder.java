@@ -69,6 +69,10 @@ public class StringPredicateBuilder extends BaseSearchParamPredicateBuilder {
 		return myColumnValueNormalized;
 	}
 
+	public DbColumn getColumnValueExact() {
+		return myColumnValueExact;
+	}
+
 	@Override
 	public DbColumn getResourceIdColumn() {
 		return myColumnResId;
