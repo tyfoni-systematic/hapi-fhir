@@ -1042,6 +1042,15 @@ public class HapiFhirJpaMigrationTasks extends BaseMigrationTasks<VersionEnum> {
 		// This fix will work for MSSQL or Oracle.
 		version.addTask(new ForceIdMigrationFixTask(version.getRelease(), "20231222.1"));
 
+		// FUT1-15876 when target resource is not local, we need TARGET_RESOURCE_URL to be the leading column
+		Builder.BuilderWithTableName linkTable = version.onTable("HFJ_RES_LINK");
+		linkTable
+				.addIndex("20240806.1", "IDX_RL_TGT_URL_v2")
+				.unique(false)
+				.online(true)
+				.withColumns(
+						"TARGET_RESOURCE_URL", "SRC_PATH", "SRC_RESOURCE_ID", "TARGET_RESOURCE_TYPE", "PARTITION_ID");
+
 		// add index to Batch2WorkChunkEntity
 		Builder.BuilderWithTableName workChunkTable = version.onTable("BT2_WORK_CHUNK");
 
