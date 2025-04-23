@@ -57,7 +57,7 @@ import java.util.function.Supplier;
  * @since 5.0.0
  */
 public class TransactionDetails {
-
+	private static final Logger ourLog = LoggerFactory.getLogger(TransactionDetails.class);
 	public static final IResourcePersistentId NOT_FOUND = IResourcePersistentId.NOT_FOUND;
 
 	private final Date myTransactionDate;
@@ -257,6 +257,16 @@ public class TransactionDetails {
 
 		if (myResolvedResourceIds.isEmpty()) {
 			myResolvedResourceIds = new HashMap<>();
+		}
+		IResourcePersistentId existingId = getResolvedResourceId(theResourceId);
+		// FUT1-17898 workaround issue with auto versioning that overwrites valid value with null
+		if (existingId != null && thePersistentId == null) {
+			ourLog.warn(
+					"Resource ID {} already exists in the resolved resource IDs map with value {}. Ignoring new value {}",
+					theResourceId,
+					existingId,
+					thePersistentId);
+			return;
 		}
 		myResolvedResourceIds.put(theResourceId.toVersionless().getValue(), thePersistentId);
 	}
