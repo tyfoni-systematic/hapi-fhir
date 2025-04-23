@@ -21,6 +21,7 @@ package ca.uhn.fhir.sl.cache;
  */
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 /**
@@ -50,4 +51,6 @@ public interface Cache<K, V> {
 	long estimatedSize();
 
 	void cleanUp();
+
+	ConcurrentMap<K, V> asMap();
 }
