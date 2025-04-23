@@ -197,6 +197,7 @@ import org.hl7.fhir.common.hapi.validation.support.UnknownCodeSystemWarningValid
 import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain;
 import org.hl7.fhir.utilities.graphql.IGraphQLStorageServices;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -254,8 +255,8 @@ public class JpaConfig {
 		return ValidationSupportChain.CacheConfiguration.defaultValues();
 	}
 
+	@Lazy
 	@Bean(name = JpaConfig.JPA_VALIDATION_SUPPORT_CHAIN)
-	@Primary
 	public IValidationSupport jpaValidationSupportChain() {
 		return new JpaValidationSupportChain(myFhirContext, validationSupportChainCacheConfiguration());
 	}
@@ -300,6 +301,7 @@ public class JpaConfig {
 	}
 
 	@Bean
+	@Lazy
 	public ResponseTerminologyTranslationSvc responseTerminologyTranslationSvc(
 			IValidationSupport theValidationSupport) {
 		return new ResponseTerminologyTranslationSvc(theValidationSupport);
@@ -378,6 +380,7 @@ public class JpaConfig {
 	}
 
 	@Bean
+	@ConditionalOnProperty(name = "hapi.fhir.terminology.enabled", havingValue = "true", matchIfMissing = true)
 	public NpmJpaValidationSupport npmJpaValidationSupport() {
 		return new NpmJpaValidationSupport();
 	}
@@ -398,6 +401,7 @@ public class JpaConfig {
 	}
 
 	@Bean
+	@ConditionalOnProperty(name = "hapi.fhir.terminology.enabled", havingValue = "true", matchIfMissing = true)
 	public ITermConceptMappingSvc termConceptMappingSvc() {
 		return new TermConceptMappingSvcImpl();
 	}
@@ -468,6 +472,7 @@ public class JpaConfig {
 	}
 
 	@Bean
+	@ConditionalOnProperty(name = "hapi.fhir.terminology.enabled", havingValue = "true", matchIfMissing = true)
 	public IPackageInstallerSvc npmInstallerSvc() {
 		return new PackageInstallerSvcImpl();
 	}
@@ -856,7 +861,14 @@ public class JpaConfig {
 	}
 
 	@Bean
+	@ConditionalOnProperty(name = "hapi.fhir.terminology.enabled", havingValue = "true", matchIfMissing = false)
 	public ITermReadSvc terminologyService() {
+		return new TermReadSvcImpl();
+	}
+
+	@Bean
+	@ConditionalOnProperty(name = "hapi.fhir.terminology.enabled", havingValue = "false", matchIfMissing = true)
+	public ITermReadSvc nullTerminologyService() {
 		return new TermReadSvcImpl();
 	}
 
@@ -872,11 +884,13 @@ public class JpaConfig {
 	}
 
 	@Bean
+	@ConditionalOnProperty(name = "hapi.fhir.terminology.enabled", havingValue = "true", matchIfMissing = true)
 	public ITermCodeSystemStorageSvc termCodeSystemStorageSvc() {
 		return new TermCodeSystemStorageSvcImpl();
 	}
 
 	@Bean
+	@ConditionalOnProperty(name = "hapi.fhir.terminology.enabled", havingValue = "true", matchIfMissing = true)
 	public ITermReindexingSvc termReindexingSvc() {
 		return new TermReindexingSvcImpl();
 	}
