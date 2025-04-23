@@ -35,7 +35,6 @@ import ca.uhn.fhir.jpa.api.config.JpaStorageSettings;
 import ca.uhn.fhir.jpa.api.dao.DaoRegistry;
 import ca.uhn.fhir.jpa.api.svc.IIdHelperService;
 import ca.uhn.fhir.jpa.api.svc.ResolveIdentityMode;
-import ca.uhn.fhir.jpa.config.HapiFhirLocalContainerEntityManagerFactoryBean;
 import ca.uhn.fhir.jpa.config.HibernatePropertiesProvider;
 import ca.uhn.fhir.jpa.dao.BaseStorageDao;
 import ca.uhn.fhir.jpa.dao.IFulltextSearchSvc;
@@ -133,6 +132,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
@@ -194,7 +194,7 @@ public class SearchBuilder implements ISearchBuilder<JpaPid> {
 	protected final IResourceTagDao myResourceTagDao;
 	private String myResourceName;
 	private final Class<? extends IBaseResource> myResourceType;
-	private final HapiFhirLocalContainerEntityManagerFactoryBean myEntityManagerFactory;
+	private final LocalContainerEntityManagerFactoryBean myEntityManagerFactory;
 	private final SqlObjectFactory mySqlBuilderFactory;
 	private final HibernatePropertiesProvider myDialectProvider;
 	private final ISearchParamRegistry mySearchParamRegistry;
@@ -251,7 +251,7 @@ public class SearchBuilder implements ISearchBuilder<JpaPid> {
 	public SearchBuilder(
 			String theResourceName,
 			JpaStorageSettings theStorageSettings,
-			HapiFhirLocalContainerEntityManagerFactoryBean theEntityManagerFactory,
+			LocalContainerEntityManagerFactoryBean theEntityManagerFactory,
 			SqlObjectFactory theSqlBuilderFactory,
 			HibernatePropertiesProvider theDialectProvider,
 			ISearchParamRegistry theSearchParamRegistry,
@@ -2022,8 +2022,8 @@ public class SearchBuilder implements ISearchBuilder<JpaPid> {
 	/**
 	 * Calls Performance Trace Hook
 	 *
-	 * @param request                 the request deatils
-	 *                                Sends a raw SQL query to the Pointcut for raw SQL queries.
+	 * @param request the request deatils
+	 *                Sends a raw SQL query to the Pointcut for raw SQL queries.
 	 */
 	private void callRawSqlHookWithCurrentThreadQueries(
 			RequestDetails request, IInterceptorBroadcaster theCompositeBroadcaster) {
