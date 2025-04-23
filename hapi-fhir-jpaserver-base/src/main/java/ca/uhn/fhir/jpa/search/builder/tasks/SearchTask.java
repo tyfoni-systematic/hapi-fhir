@@ -72,6 +72,7 @@ import static ca.uhn.fhir.jpa.util.SearchParameterMapCalculator.isWantCount;
 import static ca.uhn.fhir.jpa.util.SearchParameterMapCalculator.isWantOnlyCount;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
+import static org.springframework.transaction.annotation.Isolation.READ_COMMITTED;
 
 /**
  * A search task is a Callable task that runs in
@@ -446,7 +447,7 @@ public class SearchTask implements Callable<Void> {
 				.withTransactionDetails(null)
 				.withPropagation(Propagation.REQUIRED)
 				.withRequestPartitionId(myRequestPartitionId)
-				.withIsolation(Isolation.READ_COMMITTED)
+				.withIsolation(READ_COMMITTED)
 				.onRollback(null)
 				.withTimeout(myStorageSettings.getSearchQueryTimeout())
 				.execute(this::doSearch);
