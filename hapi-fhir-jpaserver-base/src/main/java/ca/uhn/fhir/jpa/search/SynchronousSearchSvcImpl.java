@@ -109,11 +109,12 @@ public class SynchronousSearchSvcImpl implements ISynchronousSearchSvc {
 
 		// Execute the query and make sure we return distinct results
 		return myTxService
-				.withRequest(theRequestDetails)
-				.withRequestPartitionId(theRequestPartitionId)
-				.readOnly()
-				.execute(() -> {
-					// Load the results synchronously
+			.withRequest(theRequestDetails)
+			.withRequestPartitionId(theRequestPartitionId)
+			.readOnly()
+			.withTimeout(myStorageSettings.getSearchQueryTimeout())
+			.execute(() -> {
+				// Load the results synchronously
 					List<JpaPid> pids = new ArrayList<>();
 
 					Long count = 0L;
