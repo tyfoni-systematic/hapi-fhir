@@ -137618,6 +137618,35 @@
         <value value="Dansk"></value>
        </designation>
       </concept>
+      <!-- FUT1-17898 add da-DK from R5 and added da designation - needed for PHMR -->
+      <concept>
+       <code value="da-DK"/>
+       <display value="Danish (Denmark)"/>
+       <designation>
+        <language value="en"/>
+         <use>
+          <system value="http://terminology.hl7.org/CodeSystem/designation-usage"></system>
+          <code value="display"/>
+         </use>
+         <value value="Danish (Denmark)"/>
+       </designation>
+       <designation>
+         <language value="de"/>
+         <use>
+          <system value="http://terminology.hl7.org/CodeSystem/designation-usage"/>
+          <code value="display"/>
+         </use>
+         <value value="Dänisch (Dänemark)"/>
+       </designation>
+       <designation>
+         <language value="da"></language>
+         <use>
+          <system value="http://terminology.hl7.org/CodeSystem/designation-usage"/>
+          <code value="display"></code>
+         </use>
+         <value value="Dansk (Danmark)"></value>
+       </designation>
+      </concept>
       <concept>
        <code value="de"></code>
        <display value="German"></display>
