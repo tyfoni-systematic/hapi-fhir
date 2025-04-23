@@ -120,6 +120,8 @@ public interface IHapiTransactionService {
 		 */
 		IExecutionBuilder readOnly();
 
+		IExecutionBuilder withTimeout(int timeout);
+
 		/**
 		 * Mark the transaction as read-only, if {@literal theReadOnly} is true.
 		 *
