@@ -827,12 +827,12 @@ public class ValidationSupportChain implements IValidationSupport {
 							theValueSetUrl);
 					if (outcome != null) {
 						ourLog.debug(
-								"Code {}|{} '{}' in ValueSet {} validated by {}",
-								theCodeSystem,
-								theCode,
-								theDisplay,
-								theValueSetUrl,
-								next.getName());
+							"Code {}|{} '{}' in ValueSet {} validated by {}",
+							theCodeSystem,
+							theCode,
+							theDisplay,
+							theValueSetUrl,
+							next.getName());
 						retVal = new CacheValue<>(outcome);
 						break;
 					}
@@ -1177,7 +1177,7 @@ public class ValidationSupportChain implements IValidationSupport {
 
 		@Override
 		public boolean matchUrl(String url) {
-			return myUrl.equals(url);
+			return Objects.equals(myUrl, url);
 		}
 	}
 
@@ -1243,7 +1243,7 @@ public class ValidationSupportChain implements IValidationSupport {
 
 		@Override
 		public boolean matchUrl(String url) {
-			return myUrl.equals(url);
+			return Objects.equals(myUrl, url);
 		}
 
 		private enum TypeEnum {
@@ -1306,7 +1306,7 @@ public class ValidationSupportChain implements IValidationSupport {
 
 		@Override
 		public boolean matchUrl(String url) {
-			return myValueSetUrl.equals(url);
+			return Objects.equals(myValueSetUrl, url);
 		}
 	}
 
@@ -1338,7 +1338,7 @@ public class ValidationSupportChain implements IValidationSupport {
 
 		@Override
 		public boolean matchUrl(String url) {
-			return myCodeSystemUrl.equals(url);
+			return Objects.equals(myCodeSystemUrl, url);
 		}
 	}
 
@@ -1367,7 +1367,7 @@ public class ValidationSupportChain implements IValidationSupport {
 
 		@Override
 		public boolean matchUrl(String url) {
-			return myRequest.getSystem().equals(url);
+			return Objects.equals(myRequest.getSystem(), url);
 		}
 	}
 
@@ -1396,7 +1396,7 @@ public class ValidationSupportChain implements IValidationSupport {
 
 		@Override
 		public boolean matchUrl(String url) {
-			return myRequest.getConceptMapUrl().equals(url);
+			return Objects.equals(myRequest.getConceptMapUrl(), url);
 		}
 	}
 
@@ -1442,7 +1442,7 @@ public class ValidationSupportChain implements IValidationSupport {
 
 		@Override
 		public boolean matchUrl(String url) {
-			return myValueSetUrl.equals(url) || mySystem.equals(url);
+			return Objects.equals(myValueSetUrl, url) || Objects.equals(mySystem, url);
 		}
 
 		@Override
