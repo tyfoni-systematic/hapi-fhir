@@ -11,7 +11,7 @@
 
 	<artifactId>hapi-fhir-serviceloaders</artifactId>
 	<packaging>pom</packaging>
-	<version>8.0.0-sse7</version>
+	<version>8.0.0-sse8</version>
 
 	<name>HAPI FHIR - ServiceLoaders</name>
 	
