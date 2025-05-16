@@ -56,6 +56,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
@@ -67,7 +68,7 @@ public class SearchConfig {
 	private JpaStorageSettings myStorageSettings;
 
 	@Autowired
-	private HapiFhirLocalContainerEntityManagerFactoryBean myEntityManagerFactory;
+	private LocalContainerEntityManagerFactoryBean myEntityManagerFactory;
 
 	@Autowired
 	private SqlObjectFactory mySqlBuilderFactory;

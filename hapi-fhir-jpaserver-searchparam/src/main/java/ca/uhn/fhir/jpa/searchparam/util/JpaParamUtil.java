@@ -53,7 +53,6 @@ import jakarta.annotation.Nonnull;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 public enum JpaParamUtil {
@@ -150,7 +149,8 @@ public enum JpaParamUtil {
 				resolveCompositeComponentsDeclaredOrder(theSearchParamRegistry, theParamDef);
 
 		// todo mb why is this sorted?  Is the param order flipped too during query-time?
-		compositeList.sort((Comparator.comparing(RuntimeSearchParam::getName)));
+		// FUT1-15768 make composite search work - the sorting should not be done because order if found above
+		//		compositeList.sort((Comparator.comparing(RuntimeSearchParam::getName)));
 
 		return compositeList;
 	}
