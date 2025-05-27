@@ -1045,7 +1045,7 @@ public class HapiFhirJpaMigrationTasks extends BaseMigrationTasks<VersionEnum> {
 		// FUT1-15876 when target resource is not local, we need TARGET_RESOURCE_URL to be the leading column
 		Builder.BuilderWithTableName linkTable = version.onTable("HFJ_RES_LINK");
 		linkTable
-				.addIndex("20240806.1", "IDX_RL_TGT_URL_v2")
+				.addIndex("20240101.1", "IDX_RL_TGT_URL_v2")
 				.unique(false)
 				.online(true)
 				.withColumns(
