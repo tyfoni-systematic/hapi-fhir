@@ -302,7 +302,7 @@ public class QueryStack {
 	/** Sort on RES_ID -- used to break ties for reliable sort */
 	public void addSortOnResourcePID(boolean theAscending) {
 		BaseJoiningPredicateBuilder predicateBuilder = mySqlBuilder.getOrCreateFirstPredicateBuilder();
-		mySqlBuilder.addSortString(predicateBuilder.getResourceIdColumn(), theAscending);
+		mySqlBuilder.addSortNumeric(predicateBuilder.getResourceIdColumn(), theAscending);
 	}
 
 	public void addSortOnResourceLink(
