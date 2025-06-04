@@ -26,6 +26,7 @@ import ca.uhn.fhir.interceptor.model.RequestPartitionId;
 import ca.uhn.fhir.jpa.partition.IRequestPartitionHelperSvc;
 import ca.uhn.fhir.jpa.searchparam.MatchUrlService;
 import ca.uhn.fhir.jpa.searchparam.ResourceSearch;
+import ca.uhn.fhir.rest.api.IResourceSupportedSvc;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ public class DefaultJobPartitionProvider implements IJobPartitionProvider {
 	protected final IRequestPartitionHelperSvc myRequestPartitionHelper;
 	protected FhirContext myFhirContext;
 	private MatchUrlService myMatchUrlService;
+	protected IResourceSupportedSvc myResourceSupportedSvc;
 
 	public DefaultJobPartitionProvider(IRequestPartitionHelperSvc theRequestPartitionHelperSvc) {
 		myRequestPartitionHelper = theRequestPartitionHelperSvc;
@@ -49,8 +51,10 @@ public class DefaultJobPartitionProvider implements IJobPartitionProvider {
 	public DefaultJobPartitionProvider(
 			FhirContext theFhirContext,
 			IRequestPartitionHelperSvc theRequestPartitionHelperSvc,
-			MatchUrlService theMatchUrlService) {
+			MatchUrlService theMatchUrlService,
+			IResourceSupportedSvc theResourceSupportedSvc) {
 		myFhirContext = theFhirContext;
+		myResourceSupportedSvc = theResourceSupportedSvc;
 		myRequestPartitionHelper = theRequestPartitionHelperSvc;
 		myMatchUrlService = theMatchUrlService;
 	}
@@ -69,6 +73,7 @@ public class DefaultJobPartitionProvider implements IJobPartitionProvider {
 		// we can go back to no url scenario if all resource types point to the same partition
 		if (theUrls == null || theUrls.isEmpty()) {
 			urls = myFhirContext.getResourceTypes().stream()
+					.filter(myResourceSupportedSvc::isSupported)
 					.map(resourceType -> resourceType + "?")
 					.collect(Collectors.toList());
 		}

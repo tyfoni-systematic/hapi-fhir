@@ -43,6 +43,7 @@ import ca.uhn.fhir.jpa.subscription.channel.api.ChannelProducerSettings;
 import ca.uhn.fhir.jpa.subscription.channel.api.IChannelFactory;
 import ca.uhn.fhir.jpa.subscription.channel.api.IChannelProducer;
 import ca.uhn.fhir.jpa.subscription.channel.api.IChannelReceiver;
+import ca.uhn.fhir.rest.api.IResourceSupportedSvc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -149,7 +150,9 @@ public abstract class BaseBatch2Config {
 	public IJobPartitionProvider jobPartitionProvider(
 			FhirContext theFhirContext,
 			IRequestPartitionHelperSvc theRequestPartitionHelperSvc,
-			MatchUrlService theMatchUrlService) {
-		return new DefaultJobPartitionProvider(theFhirContext, theRequestPartitionHelperSvc, theMatchUrlService);
+			MatchUrlService theMatchUrlService,
+			IResourceSupportedSvc theResourceSupportedSvc) {
+		return new DefaultJobPartitionProvider(
+				theFhirContext, theRequestPartitionHelperSvc, theMatchUrlService, theResourceSupportedSvc);
 	}
 }
