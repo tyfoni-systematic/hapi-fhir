@@ -163,7 +163,9 @@ public abstract class BaseBatch2Config {
 	public IJobPartitionProvider jobPartitionProvider(
 			FhirContext theFhirContext,
 			IRequestPartitionHelperSvc theRequestPartitionHelperSvc,
-			MatchUrlService theMatchUrlService) {
-		return new DefaultJobPartitionProvider(theFhirContext, theRequestPartitionHelperSvc, theMatchUrlService);
+			MatchUrlService theMatchUrlService,
+			IResourceSupportedSvc theResourceSupportedSvc) {
+		return new DefaultJobPartitionProvider(
+				theFhirContext, theRequestPartitionHelperSvc, theMatchUrlService, theResourceSupportedSvc);
 	}
 }
