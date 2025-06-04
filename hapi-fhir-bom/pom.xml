@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ca.uhn.hapi.fhir</groupId>
 	<artifactId>hapi-fhir-bom</artifactId>
-	<version>8.0.0-sse10</version>
+	<version>8.0.0-sse11</version>
 
 	<packaging>pom</packaging>
 	<name>HAPI FHIR BOM</name>
@@ -18,7 +18,7 @@
 	</parent>
 	<properties>
 		<hapifhir.version>8.0.0</hapifhir.version>
-		<sse.version>sse10</sse.version>
+		<sse.version>sse11</sse.version>
 	</properties>
 
 	<dependencyManagement>
@@ -181,7 +181,7 @@
 			<dependency>
 				<groupId>${project.groupId}</groupId>
 				<artifactId>hapi-fhir-storage-batch2</artifactId>
-				<version>${hapifhir.version}</version>
+				<version>${hapifhir.version}-${sse.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>${project.groupId}</groupId>
