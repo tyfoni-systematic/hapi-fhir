@@ -27,6 +27,7 @@ import ca.uhn.fhir.jpa.entity.PartitionEntity;
 import ca.uhn.fhir.jpa.partition.IPartitionLookupSvc;
 import ca.uhn.fhir.jpa.partition.IRequestPartitionHelperSvc;
 import ca.uhn.fhir.jpa.searchparam.MatchUrlService;
+import ca.uhn.fhir.rest.api.IResourceSupportedSvc;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,8 +52,9 @@ public class JpaJobPartitionProvider extends DefaultJobPartitionProvider {
 			FhirContext theFhirContext,
 			IRequestPartitionHelperSvc theRequestPartitionHelperSvc,
 			MatchUrlService theMatchUrlService,
-			IPartitionLookupSvc thePartitionLookupSvc) {
-		super(theFhirContext, theRequestPartitionHelperSvc, theMatchUrlService);
+			IPartitionLookupSvc thePartitionLookupSvc,
+			IResourceSupportedSvc theResourceSupportedSvc) {
+		super(theFhirContext, theRequestPartitionHelperSvc, theMatchUrlService, theResourceSupportedSvc);
 		myPartitionLookupSvc = thePartitionLookupSvc;
 	}
 
