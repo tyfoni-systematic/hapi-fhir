@@ -191,7 +191,7 @@
 			<dependency>
 				<groupId>${project.groupId}</groupId>
 				<artifactId>hapi-fhir-storage-batch2</artifactId>
-				<version>${hapifhir.version}</version>
+				<version>${hapifhir.version}-${sse.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>${project.groupId}</groupId>
