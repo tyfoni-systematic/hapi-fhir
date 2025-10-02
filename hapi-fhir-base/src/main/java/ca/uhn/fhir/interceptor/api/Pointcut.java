@@ -1886,6 +1886,79 @@ public enum Pointcut implements IPointcut {
 			"ca.uhn.fhir.interceptor.model.TransactionWriteOperationsDetails",
 			"ca.uhn.fhir.rest.api.server.storage.TransactionDetails"),
 
+	// FUT1-20532 CCR0237 custom pointcuts to support resolving duration for transactions
+	// BEGIN FUT CUSTOM Hooks for CCR0237
+	/**
+	 * <b>Storage Hook:</b>
+	 * Invoked during a FHIR transaction, immediately before processing an operation for a single entry in a transaction bundle.
+	 * <p>
+	 * Hooks may accept the following parameters:
+	 * <ul>
+	 * <li>Integer - The index of the entry in the transaction bundle.</li>
+	 * <li>
+	 * org.hl7.fhir.instance.model.api.IBaseBundle - the transaction response bundle.
+	 * </li>
+	 * <li>
+	 * ca.uhn.fhir.rest.api.server.RequestDetails - A bean containing details about the request that is about to be processed, including details such as the
+	 * resource type and logical ID (if any) and other FHIR-specific aspects of the request which have been
+	 * pulled out of the servlet request. Note that the bean
+	 * properties are not all guaranteed to be populated, depending on how early during processing the
+	 * exception occurred.
+	 * </li>
+	 * <li>
+	 * ca.uhn.fhir.rest.server.servlet.ServletRequestDetails - A bean containing details about the request that is about to be processed, including details such as the
+	 * resource type and logical ID (if any) and other FHIR-specific aspects of the request which have been
+	 * pulled out of the servlet request. This parameter is identical to the RequestDetails parameter above but will
+	 * only be populated when operating in a RestfulServer implementation. It is provided as a convenience.
+	 * </li>
+	 * </ul>
+	 * <p>
+	 * Hooks should return void.
+	 * </p>
+	 */
+	STORAGE_TRANSACTION_ENTRY_PRE(
+			void.class,
+			"Integer.class",
+			"org.hl7.fhir.instance.model.api.IBaseBundle",
+			"ca.uhn.fhir.rest.api.server.RequestDetails",
+			"ca.uhn.fhir.rest.server.servlet.ServletRequestDetails"),
+
+	/**
+	 * <b>Storage Hook:</b>
+	 * Invoked during a FHIR transaction, immediately after processing an operation for a single entry in a transaction bundle.
+	 * <p>
+	 * Hooks may accept the following parameters:
+	 * <ul>
+	 * <li>Integer - The index of the entry in the transaction bundle.</li>
+	 * <li>
+	 * org.hl7.fhir.instance.model.api.IBaseBundle - the transaction response bundle.
+	 * </li>
+	 * <li>
+	 * ca.uhn.fhir.rest.api.server.RequestDetails - A bean containing details about the request that is about to be processed, including details such as the
+	 * resource type and logical ID (if any) and other FHIR-specific aspects of the request which have been
+	 * pulled out of the servlet request. Note that the bean
+	 * properties are not all guaranteed to be populated, depending on how early during processing the
+	 * exception occurred.
+	 * </li>
+	 * <li>
+	 * ca.uhn.fhir.rest.server.servlet.ServletRequestDetails - A bean containing details about the request that is about to be processed, including details such as the
+	 * resource type and logical ID (if any) and other FHIR-specific aspects of the request which have been
+	 * pulled out of the servlet request. This parameter is identical to the RequestDetails parameter above but will
+	 * only be populated when operating in a RestfulServer implementation. It is provided as a convenience.
+	 * </li>
+	 * </ul>
+	 * <p>
+	 * Hooks should return void.
+	 * </p>
+	 */
+	STORAGE_TRANSACTION_ENTRY_POST(
+			void.class,
+			"Integer.class",
+			"org.hl7.fhir.instance.model.api.IBaseBundle",
+			"ca.uhn.fhir.rest.api.server.RequestDetails",
+			"ca.uhn.fhir.rest.server.servlet.ServletRequestDetails"),
+	// END FUT CUSTOM Hooks for CCR0237
+
 	/**
 	 * <b>Storage Hook:</b>
 	 * Invoked when a resource delete operation is about to fail due to referential integrity checks. Intended for use with {@literal ca.uhn.fhir.jpa.interceptor.CascadingDeleteInterceptor}.
