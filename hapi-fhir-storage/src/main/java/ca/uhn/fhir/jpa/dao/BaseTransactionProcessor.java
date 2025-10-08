@@ -1179,7 +1179,9 @@ public abstract class BaseTransactionProcessor {
 				IBase nextRespEntry =
 						(IBase) myVersionAdapter.getEntries(theResponse).get(order);
 				// FUT1-20532 CCR0237 hook custom pointcut to support resolving duration for transactions
-				callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_PRE, theRequest, theResponse, order);
+				if (!"GET".equals(verb)) {
+					callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_PRE, theRequest, theResponse, order);
+				}
 				theTransactionStopWatch.startTask(
 						"Bundle.entry[" + i + "]: " + verb + " " + defaultString(resourceType));
 
@@ -1433,7 +1435,9 @@ public abstract class BaseTransactionProcessor {
 
 				theTransactionStopWatch.endCurrentTask();
 				// FUT1-20532 CCR0237 hook custom pointcut to support resolving duration for transactions
-				callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_POST, theRequest, theResponse, order);
+				if (!"GET".equals(verb)) {
+					callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_POST, theRequest, theResponse, order);
+				}
 			}
 
 			postTransactionProcess(theTransactionDetails);
@@ -1543,27 +1547,27 @@ public abstract class BaseTransactionProcessor {
 	}
 
 	/**
-	 * Subclasses may override this in order to invoke specific operations when
-	 * we're finished handling all the write entries in the transaction bundle
-	 * with a given verb.
-	 */
+     * Subclasses may override this in order to invoke specific operations when
+     * we're finished handling all the write entries in the transaction bundle
+     * with a given verb.
+     */
 	protected void handleVerbChangeInTransactionWriteOperations() {
 		// nothing
 	}
 
 	/**
-	 * Implement to handle post transaction processing
-	 */
+     * Implement to handle post transaction processing
+     */
 	protected void postTransactionProcess(TransactionDetails theTransactionDetails) {
 		// nothing
 	}
 
 	/**
-	 * Check for if a resource id should be matched in a conditional update
-	 * If the FHIR version is older than R4, it follows the old specifications and does not match
-	 * If the resource id has been resolved, then it is an existing resource and does not need to be matched
-	 * If the resource id is local or a placeholder, the id is temporary and should not be matched
-	 */
+     * Check for if a resource id should be matched in a conditional update
+     * If the FHIR version is older than R4, it follows the old specifications and does not match
+     * If the resource id has been resolved, then it is an existing resource and does not need to be matched
+     * If the resource id is local or a placeholder, the id is temporary and should not be matched
+     */
 	private boolean shouldConditionalUpdateMatchId(TransactionDetails theTransactionDetails, IIdType theId) {
 		if (myContext.getVersion().getVersion().isOlderThan(FhirVersionEnum.R4)) {
 			return false;
@@ -1597,9 +1601,9 @@ public abstract class BaseTransactionProcessor {
 	}
 
 	/**
-	 * After transaction processing and resolution of indexes and references, we want to validate that the resources that were stored _actually_
-	 * match the conditional URLs that they were brought in on.
-	 */
+     * After transaction processing and resolution of indexes and references, we want to validate that the resources that were stored _actually_
+     * match the conditional URLs that they were brought in on.
+     */
 	private void validateAllInsertsMatchTheirConditionalUrls(
 			Map<IIdType, DaoMethodOutcome> theIdToPersistedOutcome,
 			Map<String, IIdType> conditionalUrlToIdMap,
@@ -1634,12 +1638,12 @@ public abstract class BaseTransactionProcessor {
 	}
 
 	/**
-	 * Checks for any delete conflicts.
-	 *
-	 * @param theDeleteConflicts  - set of delete conflicts
-	 * @param theDeletedResources - set of deleted resources
-	 * @param theUpdatedResources - list of updated resources
-	 */
+     * Checks for any delete conflicts.
+     *
+     * @param theDeleteConflicts  - set of delete conflicts
+     * @param theDeletedResources - set of deleted resources
+     * @param theUpdatedResources - list of updated resources
+     */
 	private void checkForDeleteConflicts(
 			DeleteConflictList theDeleteConflicts,
 			Set<String> theDeletedResources,
@@ -1689,27 +1693,27 @@ public abstract class BaseTransactionProcessor {
 	}
 
 	/**
-	 * This method replaces any placeholder references in the
-	 * source transaction Bundle with their actual targets, then stores the resource contents and indexes
-	 * in the database. This is trickier than you'd think because of a couple of possibilities during the
-	 * save:
-	 * * There may be resources that have not changed (e.g. an update/PUT with a resource body identical
-	 * to what is already in the database)
-	 * * There may be resources with auto-versioned references, meaning we're replacing certain references
-	 * in the resource with a versioned references, referencing the current version at the time of the
-	 * transaction processing
-	 * * There may by auto-versioned references pointing to these unchanged targets
-	 * <p>
-	 * If we're not doing any auto-versioned references, we'll just iterate through all resources in the
-	 * transaction and save them one at a time.
-	 * <p>
-	 * However, if we have any auto-versioned references we do this in 2 passes: First the resources from the
-	 * transaction that don't have any auto-versioned references are stored. We do them first since there's
-	 * a chance they may be a NOP and we'll need to account for their version number not actually changing.
-	 * Then we do a second pass for any resources that have auto-versioned references. These happen in a separate
-	 * pass because it's too complex to try and insert the auto-versioned references and still
-	 * account for NOPs, so we block NOPs in that pass.
-	 */
+     * This method replaces any placeholder references in the
+     * source transaction Bundle with their actual targets, then stores the resource contents and indexes
+     * in the database. This is trickier than you'd think because of a couple of possibilities during the
+     * save:
+     * * There may be resources that have not changed (e.g. an update/PUT with a resource body identical
+     * to what is already in the database)
+     * * There may be resources with auto-versioned references, meaning we're replacing certain references
+     * in the resource with a versioned references, referencing the current version at the time of the
+     * transaction processing
+     * * There may by auto-versioned references pointing to these unchanged targets
+     * <p>
+     * If we're not doing any auto-versioned references, we'll just iterate through all resources in the
+     * transaction and save them one at a time.
+     * <p>
+     * However, if we have any auto-versioned references we do this in 2 passes: First the resources from the
+     * transaction that don't have any auto-versioned references are stored. We do them first since there's
+     * a chance they may be a NOP and we'll need to account for their version number not actually changing.
+     * Then we do a second pass for any resources that have auto-versioned references. These happen in a separate
+     * pass because it's too complex to try and insert the auto-versioned references and still
+     * account for NOPs, so we block NOPs in that pass.
+     */
 	private void resolveReferencesThenSaveAndIndexResources(
 			RequestDetails theRequest,
 			TransactionDetails theTransactionDetails,
@@ -1992,15 +1996,16 @@ public abstract class BaseTransactionProcessor {
 	}
 
 	/**
-	 * We should replace the references when
-	 * 1. It is not a reference we should keep the client-supplied version for as configured by `DontStripVersionsFromReferences` or
-	 * 2. It is a reference that has been identified for auto versioning or
-	 * 3. Is a placeholder reference
-	 * @param theReferencesToAutoVersion list of references identified for auto versioning
-	 * @param theReferencesToKeepClientSuppliedVersion list of references that we should not strip the version for
-	 * @param theResourceReference the resource reference
-	 * @return true if we should replace the resource reference, false if we should keep the client provided reference
-	 */
+     * We should replace the references when
+     * 1. It is not a reference we should keep the client-supplied version for as configured by `DontStripVersionsFromReferences` or
+     * 2. It is a reference that has been identified for auto versioning or
+     * 3. Is a placeholder reference
+     *
+     * @param theReferencesToAutoVersion               list of references identified for auto versioning
+     * @param theReferencesToKeepClientSuppliedVersion list of references that we should not strip the version for
+     * @param theResourceReference                     the resource reference
+     * @return true if we should replace the resource reference, false if we should keep the client provided reference
+     */
 	private boolean shouldReplaceResourceReference(
 			Set<IBaseReference> theReferencesToAutoVersion,
 			Set<IBaseReference> theReferencesToKeepClientSuppliedVersion,
@@ -2144,12 +2149,12 @@ public abstract class BaseTransactionProcessor {
 	}
 
 	/**
-	 * Extracts the transaction url from the entry and verifies it's:
-	 * * not null or blank
-	 * * is a relative url matching the resourceType it is about
-	 * <p>
-	 * Returns the transaction url (or throws an InvalidRequestException if url is not valid)
-	 */
+     * Extracts the transaction url from the entry and verifies it's:
+     * * not null or blank
+     * * is a relative url matching the resourceType it is about
+     * <p>
+     * Returns the transaction url (or throws an InvalidRequestException if url is not valid)
+     */
 	private String extractAndVerifyTransactionUrlForEntry(IBase theEntry, String theVerb) {
 		String url = extractTransactionUrlOrThrowException(theEntry, theVerb);
 
@@ -2163,12 +2168,12 @@ public abstract class BaseTransactionProcessor {
 	}
 
 	/**
-	 * Returns true if the provided url is a valid entry request.url.
-	 * <p>
-	 * This means:
-	 * a) not an absolute url (does not start with http/https)
-	 * b) starts with either a ResourceType or /ResourceType
-	 */
+     * Returns true if the provided url is a valid entry request.url.
+     * <p>
+     * This means:
+     * a) not an absolute url (does not start with http/https)
+     * b) starts with either a ResourceType or /ResourceType
+     */
 	private boolean isValidResourceTypeUrl(@Nonnull String theUrl) {
 		if (UrlUtil.isAbsolute(theUrl)) {
 			return false;
@@ -2193,9 +2198,9 @@ public abstract class BaseTransactionProcessor {
 	}
 
 	/**
-	 * Extracts the transaction url from the entry and verifies that it is not null/blank
-	 * and returns it
-	 */
+     * Extracts the transaction url from the entry and verifies that it is not null/blank
+     * and returns it
+     */
 	private String extractTransactionUrlOrThrowException(IBase nextEntry, String verb) {
 		String url = myVersionAdapter.getEntryRequestUrl(nextEntry);
 		if (isBlank(url)) {
@@ -2252,14 +2257,14 @@ public abstract class BaseTransactionProcessor {
 	}
 
 	/**
-	 * Transaction Order, per the spec:
-	 * <p>
-	 * Process any DELETE interactions
-	 * Process any POST interactions
-	 * Process any PUT interactions
-	 * Process any PATCH interactions
-	 * Process any GET interactions
-	 */
+     * Transaction Order, per the spec:
+     * <p>
+     * Process any DELETE interactions
+     * Process any POST interactions
+     * Process any PUT interactions
+     * Process any PATCH interactions
+     * Process any GET interactions
+     */
 	// @formatter:off
 	public class TransactionSorter implements Comparator<IBase> {
 
