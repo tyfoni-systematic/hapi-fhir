@@ -1431,7 +1431,9 @@ public abstract class BaseTransactionProcessor {
 				IBase nextRespEntry =
 						(IBase) myVersionAdapter.getEntries(theResponse).get(order);
 				// FUT1-20532 CCR0237 hook custom pointcut to support resolving duration for transactions
-				callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_PRE, theRequest, theResponse, order);
+				if (!"GET".equals(verb)) {
+					callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_PRE, theRequest, theResponse, order);
+				}
 				theTransactionStopWatch.startTask(
 						"Bundle.entry[" + i + "]: " + verb + " " + defaultString(resourceType));
 
@@ -1674,7 +1676,9 @@ public abstract class BaseTransactionProcessor {
 
 				theTransactionStopWatch.endCurrentTask();
 				// FUT1-20532 CCR0237 hook custom pointcut to support resolving duration for transactions
-				callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_POST, theRequest, theResponse, order);
+				if (!"GET".equals(verb)) {
+					callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_POST, theRequest, theResponse, order);
+				}
 			}
 
 			postTransactionProcess(theTransactionDetails);
