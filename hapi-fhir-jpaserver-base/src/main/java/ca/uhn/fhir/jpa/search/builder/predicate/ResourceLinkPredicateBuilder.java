@@ -611,10 +611,19 @@ public class ResourceLinkPredicateBuilder extends BaseJoiningPredicateBuilder im
 	@Nonnull
 	private List<String> determineCandidateResourceTypesForChain(
 			String theResourceName, String theParamName, ReferenceParam theReferenceParam) {
+		final List<Class<? extends IBaseResource>> unfilteredResourceTypes;
 		final List<Class<? extends IBaseResource>> resourceTypes;
 		if (!theReferenceParam.hasResourceType()) {
 
-			resourceTypes = determineResourceTypes(Collections.singleton(theResourceName), theParamName);
+			unfilteredResourceTypes = determineResourceTypes(Collections.singleton(theResourceName), theParamName);
+			// FUT1-20792 Chained Searches fails after upgrading to HAPI 8.0.0, since we removed the registration DAOs
+			// for all Resources on each Service.
+			// Introduce filtering so we only keep use chaining on resources registered with the Service.
+			Set<String> registeredResourceNames = myDaoRegistry.getRegisteredDaoTypes();
+			resourceTypes = unfilteredResourceTypes.stream()
+					.filter(rt ->
+							registeredResourceNames.contains(getFhirContext().getResourceType(rt)))
+					.collect(Collectors.toList());
 
 			if (resourceTypes.isEmpty()) {
 				RuntimeSearchParam searchParamByName = mySearchParamRegistry.getActiveSearchParam(
