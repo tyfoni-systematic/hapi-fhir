@@ -419,7 +419,9 @@ public class FhirPatch {
 
 				IBase childNewValue = createAndPopulateNewElement(childDefinition, part);
 
-				childDefinition.getChildDef().getMutator().setValue(newElement, childNewValue);
+				//FUT1-21179 changed from setValue to addValue - otherwise only one child element would be created.
+				//In our case the problem was with extensions - only one extension would be created even though most of our extensions contains multiple extensions
+				childDefinition.getChildDef().getMutator().addValue(newElement, childNewValue);
 			}
 		}
 
