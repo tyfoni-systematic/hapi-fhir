@@ -117,4 +117,10 @@ public class ServletSubRequestDetails extends ServletRequestDetails {
 	public boolean isSubRequest() {
 		return true;
 	}
+
+	// FUT1-22151 This method is needed for being able to access the wrapped RequestDetails in the AuditEventBuilder
+	// The FUT AuditEventBuilder needs to access getOperation() of the wrapped RequestDetails to populate the AuditEvent subType
+	public ServletRequestDetails getWrappedRequestDetails() {
+		return myWrap;
+	}
 }
