@@ -46,6 +46,7 @@ import ca.uhn.fhir.jpa.dao.tx.IHapiTransactionService;
 import ca.uhn.fhir.jpa.model.sched.ISchedulerService;
 import ca.uhn.fhir.jpa.partition.IRequestPartitionHelperSvc;
 import ca.uhn.fhir.jpa.searchparam.MatchUrlService;
+import ca.uhn.fhir.rest.api.IResourceSupportedSvc;
 import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -163,7 +164,9 @@ public abstract class BaseBatch2Config {
 	public IJobPartitionProvider jobPartitionProvider(
 			FhirContext theFhirContext,
 			IRequestPartitionHelperSvc theRequestPartitionHelperSvc,
-			MatchUrlService theMatchUrlService) {
-		return new DefaultJobPartitionProvider(theFhirContext, theRequestPartitionHelperSvc, theMatchUrlService);
+			MatchUrlService theMatchUrlService,
+			IResourceSupportedSvc theResourceSupportedSvc) {
+		return new DefaultJobPartitionProvider(
+				theFhirContext, theRequestPartitionHelperSvc, theMatchUrlService, theResourceSupportedSvc);
 	}
 }

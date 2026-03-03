@@ -260,6 +260,14 @@ public class ValidationSupportChain implements IValidationSupport {
 		myName = theName;
 	}
 
+	/**
+	 * FUT1-17898 upgrade to hapi-fhir 8.0.0 - add a method to get the expiring cache
+	 * We need to expose the cache (package private) so that we can invalidate it based on notification from terminology services
+	 */
+	Cache<BaseKey<?>, Object> getExpiringCache() {
+		return myExpiringCache;
+	}
+
 	@PostConstruct
 	public void start() {
 		if (myMetrics == null) {
@@ -819,12 +827,12 @@ public class ValidationSupportChain implements IValidationSupport {
 							theValueSetUrl);
 					if (outcome != null) {
 						ourLog.debug(
-								"Code {}|{} '{}' in ValueSet {} validated by {}",
-								theCodeSystem,
-								theCode,
-								theDisplay,
-								theValueSetUrl,
-								next.getName());
+							"Code {}|{} '{}' in ValueSet {} validated by {}",
+							theCodeSystem,
+							theCode,
+							theDisplay,
+							theValueSetUrl,
+							next.getName());
 						retVal = new CacheValue<>(outcome);
 						break;
 					}
@@ -1132,6 +1140,10 @@ public class ValidationSupportChain implements IValidationSupport {
 
 		@Override
 		public abstract int hashCode();
+
+		public boolean matchUrl(String url) {
+			return false;
+		}
 	}
 
 	static class ExpandValueSetKey extends BaseKey<ValueSetExpansionOutcome> {
@@ -1161,6 +1173,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		@Override
 		public int hashCode() {
 			return myHashCode;
+		}
+
+		@Override
+		public boolean matchUrl(String url) {
+			return Objects.equals(myUrl, url);
 		}
 	}
 
@@ -1224,6 +1241,11 @@ public class ValidationSupportChain implements IValidationSupport {
 			return myHashCode;
 		}
 
+		@Override
+		public boolean matchUrl(String url) {
+			return Objects.equals(myUrl, url);
+		}
+
 		private enum TypeEnum {
 			CODESYSTEM,
 			VALUESET,
@@ -1281,6 +1303,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		public int hashCode() {
 			return myHashCode;
 		}
+
+		@Override
+		public boolean matchUrl(String url) {
+			return Objects.equals(myValueSetUrl, url);
+		}
 	}
 
 	static class IsCodeSystemSupportedKey extends BaseKey<Boolean> {
@@ -1308,6 +1335,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		public int hashCode() {
 			return myHashCode;
 		}
+
+		@Override
+		public boolean matchUrl(String url) {
+			return Objects.equals(myCodeSystemUrl, url);
+		}
 	}
 
 	static class LookupCodeKey extends BaseKey<LookupCodeResult> {
@@ -1332,6 +1364,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		public int hashCode() {
 			return myHashCode;
 		}
+
+		@Override
+		public boolean matchUrl(String url) {
+			return Objects.equals(myRequest.getSystem(), url);
+		}
 	}
 
 	static class TranslateConceptKey extends BaseKey<TranslateConceptResults> {
@@ -1355,6 +1392,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		@Override
 		public int hashCode() {
 			return myHashCode;
+		}
+
+		@Override
+		public boolean matchUrl(String url) {
+			return Objects.equals(myRequest.getConceptMapUrl(), url);
 		}
 	}
 
@@ -1399,6 +1441,11 @@ public class ValidationSupportChain implements IValidationSupport {
 		}
 
 		@Override
+		public boolean matchUrl(String url) {
+			return Objects.equals(myValueSetUrl, url) || Objects.equals(mySystem, url);
+		}
+
+		@Override
 		public String toString() {
 			return "ValidateCodeKey{"
 					+ "mySystem='" + mySystem + '\''
@@ -1415,7 +1462,7 @@ public class ValidationSupportChain implements IValidationSupport {
 	 * because we want to use it as a method parameter value, and compare instances of
 	 * it with null. Both of these things generate warnings in various linters.
 	 */
-	private static class CacheValue<T> {
+	static class CacheValue<T> {
 
 		private static final CacheValue<CodeValidationResult> EMPTY = new CacheValue<>(null);
 

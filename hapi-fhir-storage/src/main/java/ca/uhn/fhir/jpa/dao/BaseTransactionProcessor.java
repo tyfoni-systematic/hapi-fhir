@@ -739,6 +739,8 @@ public abstract class BaseTransactionProcessor {
 				}
 
 				Validate.isTrue(method instanceof BaseResourceReturningMethodBinding, "Unable to handle GET {}", url);
+				// FUT1-20532 CCR0237 hook custom pointcut to support resolving duration for transactions
+				callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_PRE, theRequestDetails, theResponse, originalOrder);
 				try {
 					BaseResourceReturningMethodBinding methodBinding = (BaseResourceReturningMethodBinding) method;
 					requestDetailsForEntry.setRestOperationType(methodBinding.getRestOperationType());
@@ -758,6 +760,8 @@ public abstract class BaseTransactionProcessor {
 					myVersionAdapter.setResponseStatus(nextRespEntry, toStatusString(e.getStatusCode()));
 					populateEntryWithOperationOutcome(e, nextRespEntry);
 				}
+				// FUT1-20532 CCR0237 hook custom pointcut to support resolving duration for transactions
+				callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_POST, theRequestDetails, theResponse, originalOrder);
 			}
 			theTransactionStopWatch.endCurrentTask();
 		}
@@ -1065,6 +1069,22 @@ public abstract class BaseTransactionProcessor {
 		}
 		return nextWriteEntryRequestPartitionId;
 	}
+
+	// BEGIN CUSTOM CCR0237
+	private void callEntryHook(
+			Pointcut thePointcut, RequestDetails theRequestDetails, IBaseBundle theResponse, Integer theEntryOrder) {
+		IInterceptorBroadcaster compositeBroadcaster =
+				CompositeInterceptorBroadcaster.newCompositeBroadcaster(myInterceptorBroadcaster, theRequestDetails);
+		if (compositeBroadcaster.hasHooks(thePointcut)) {
+			HookParams params = new HookParams()
+					.add(RequestDetails.class, theRequestDetails)
+					.addIfMatchesType(ServletRequestDetails.class, theRequestDetails)
+					.add(IBaseBundle.class, theResponse)
+					.add(Integer.class, theEntryOrder);
+			compositeBroadcaster.callHooks(thePointcut, params);
+		}
+	}
+	// END CUSTOM CCR0237
 
 	private boolean haveWriteOperationsHooks(RequestDetails theRequestDetails) {
 		IInterceptorBroadcaster compositeBroadcaster =
@@ -1410,7 +1430,10 @@ public abstract class BaseTransactionProcessor {
 				Integer order = theOriginalRequestOrder.get(nextReqEntry);
 				IBase nextRespEntry =
 						(IBase) myVersionAdapter.getEntries(theResponse).get(order);
-
+				// FUT1-20532 CCR0237 hook custom pointcut to support resolving duration for transactions
+				if (!"GET".equals(verb)) {
+					callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_PRE, theRequest, theResponse, order);
+				}
 				theTransactionStopWatch.startTask(
 						"Bundle.entry[" + i + "]: " + verb + " " + defaultString(resourceType));
 
@@ -1652,6 +1675,10 @@ public abstract class BaseTransactionProcessor {
 				}
 
 				theTransactionStopWatch.endCurrentTask();
+				// FUT1-20532 CCR0237 hook custom pointcut to support resolving duration for transactions
+				if (!"GET".equals(verb)) {
+					callEntryHook(Pointcut.STORAGE_TRANSACTION_ENTRY_POST, theRequest, theResponse, order);
+				}
 			}
 
 			postTransactionProcess(theTransactionDetails);
@@ -2047,6 +2074,10 @@ public abstract class BaseTransactionProcessor {
 						continue;
 					} else if (theIdSubstitutions.containsTarget(targetId)) {
 						newId = targetId;
+					} else if (targetId.hasIdPart()) {
+						newId = targetId;
+						// FUT1-5671 workaround issue with bundle references to updated resources or unchanged resources
+						ourLog.debug(" * FUT1-5671 Handling mismatched ref {}", targetId);
 					} else {
 						throw new InternalErrorException(Msg.code(540)
 								+ "References by resource with no reference ID are not supported in DAO layer");

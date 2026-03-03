@@ -302,7 +302,8 @@ public class QueryStack {
 	/** Sort on RES_ID -- used to break ties for reliable sort */
 	public void addSortOnResourcePID(boolean theAscending) {
 		BaseJoiningPredicateBuilder predicateBuilder = mySqlBuilder.getOrCreateFirstPredicateBuilder();
-		mySqlBuilder.addSortString(predicateBuilder.getResourceIdColumn(), theAscending);
+		//FUT1-20075 issue https://github.com/hapifhir/hapi-fhir/issues/7013
+		mySqlBuilder.addSortNumeric(predicateBuilder.getResourceIdColumn(), theAscending);
 	}
 
 	public void addSortOnResourceLink(
@@ -458,7 +459,7 @@ public class QueryStack {
 
 		addSortCustomJoin(firstPredicateBuilder, stringPredicateBuilder, hashIdentityPredicate);
 
-		mySqlBuilder.addSortString(stringPredicateBuilder.getColumnValueNormalized(), theAscending, myUseAggregate);
+		mySqlBuilder.addSortString(stringPredicateBuilder.getColumnValueExact(), theAscending, myUseAggregate);
 	}
 
 	public void addSortOnToken(String theResourceName, String theParamName, boolean theAscending) {

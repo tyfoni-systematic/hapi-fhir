@@ -35,7 +35,6 @@ public class FhirContextR4Config {
 	public static final String DEFAULT_PRESERVE_VERSION_REFS_R4_AND_LATER = "AuditEvent.entity.what";
 
 	@Bean(name = "primaryFhirContext")
-	@Primary
 	public FhirContext fhirContextR4(@Autowired(required = false) INarrativeGenerator theNarrativeGenerator) {
 		FhirContext retVal = FhirContext.forR4();
 
