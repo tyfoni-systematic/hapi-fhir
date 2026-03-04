@@ -41,6 +41,7 @@ import ca.uhn.fhir.jpa.model.util.JpaConstants;
 import ca.uhn.fhir.model.valueset.BundleTypeEnum;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.api.Constants;
+import ca.uhn.fhir.rest.api.IResourceSupportedSvc;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.RestfulServer;
 import ca.uhn.fhir.rest.server.RestfulServerUtils;
@@ -78,6 +79,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ca.uhn.fhir.rest.server.provider.ProviderConstants.ALL_PARTITIONS_TENANT_NAME;
 import static org.apache.commons.lang3.ObjectUtils.getIfNull;
@@ -107,6 +109,9 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 
 	@Autowired
 	private IDaoRegistry myDaoRegistry;
+
+	@Autowired
+	private IResourceSupportedSvc myResourceSupportedSvc;
 
 	/**
 	 * Subclasses should call this method to initiate a new job
@@ -142,13 +147,11 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 			// if the url list is empty, use all the supported resource types to build the url list
 			// we can go back to no url scenario if all resource types point to the same partition
 			if (urls.isEmpty()) {
-				List<String> list = new ArrayList<>();
-				for (String t : myContext.getResourceTypes()) {
-					if (myDaoRegistry.isResourceTypeSupported(t)) {
-						list.add(t + "?");
-					}
+				urls = myContext.getResourceTypes().stream()
+					.filter(myResourceSupportedSvc::isSupported)
+					.map(resourceType -> resourceType + "?")
+					.collect(Collectors.toList());
 				}
-				urls = list;
 			}
 		}
 
