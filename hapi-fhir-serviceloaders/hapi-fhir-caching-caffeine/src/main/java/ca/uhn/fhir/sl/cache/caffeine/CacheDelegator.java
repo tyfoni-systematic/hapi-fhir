@@ -21,6 +21,7 @@ package ca.uhn.fhir.sl.cache.caffeine;
  */
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 public class CacheDelegator<K, V> implements ca.uhn.fhir.sl.cache.Cache<K, V> {
@@ -79,5 +80,10 @@ public class CacheDelegator<K, V> implements ca.uhn.fhir.sl.cache.Cache<K, V> {
 	@Override
 	public void cleanUp() {
 		cache.cleanUp();
+	}
+
+	@Override
+	public ConcurrentMap<K, V> asMap() {
+		return cache.asMap();
 	}
 }

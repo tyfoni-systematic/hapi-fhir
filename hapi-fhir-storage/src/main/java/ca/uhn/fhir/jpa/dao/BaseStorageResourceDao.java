@@ -229,7 +229,11 @@ public abstract class BaseStorageResourceDao<T extends IBaseResource> extends Ba
 		}
 	}
 
-	private IBaseResource applyPatchToResource(
+	// FUT1-22151 allow override of applyPatchToResource for special handling of FUT extensions
+	// Special handling as FUT maps resource extensions to custom fields in EHealth-Model which makes the extension
+	// property empty,
+	// which means PATCH operation won't work for extension modifications like replacing extension[1].
+	protected IBaseResource applyPatchToResource(
 			PatchTypeEnum thePatchType,
 			String thePatchBody,
 			IBaseParameters theFhirPatchBody,

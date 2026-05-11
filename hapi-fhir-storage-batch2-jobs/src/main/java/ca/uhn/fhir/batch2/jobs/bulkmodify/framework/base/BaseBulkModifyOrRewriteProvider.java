@@ -41,6 +41,7 @@ import ca.uhn.fhir.jpa.model.util.JpaConstants;
 import ca.uhn.fhir.model.valueset.BundleTypeEnum;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.api.Constants;
+import ca.uhn.fhir.rest.api.IResourceSupportedSvc;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.RestfulServer;
 import ca.uhn.fhir.rest.server.RestfulServerUtils;
@@ -78,6 +79,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ca.uhn.fhir.rest.server.provider.ProviderConstants.ALL_PARTITIONS_TENANT_NAME;
 import static org.apache.commons.lang3.ObjectUtils.getIfNull;
@@ -108,54 +110,54 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 	@Autowired
 	private IDaoRegistry myDaoRegistry;
 
+	@Autowired
+	private IResourceSupportedSvc myResourceSupportedSvc;
+
 	/**
 	 * Subclasses should call this method to initiate a new job
 	 */
 	protected void startJobAndReturnResponse(
-			ServletRequestDetails theRequestDetails,
-			List<IPrimitiveType<String>> theUrlsToReindex,
-			IPrimitiveType<Boolean> theDryRun,
-			IPrimitiveType<String> theDryRunMode,
-			IPrimitiveType<Integer> theBatchSize,
-			IPrimitiveType<Integer> theLimitResourceCount,
-			IPrimitiveType<Integer> theLimitResourceVersionCount,
-			List<IPrimitiveType<String>> thePartitionIds,
-			BaseBulkModifyJobParameters theJobParameters)
-			throws IOException {
+		ServletRequestDetails theRequestDetails,
+		List<IPrimitiveType<String>> theUrlsToReindex,
+		IPrimitiveType<Boolean> theDryRun,
+		IPrimitiveType<String> theDryRunMode,
+		IPrimitiveType<Integer> theBatchSize,
+		IPrimitiveType<Integer> theLimitResourceCount,
+		IPrimitiveType<Integer> theLimitResourceVersionCount,
+		List<IPrimitiveType<String>> thePartitionIds,
+		BaseBulkModifyJobParameters theJobParameters)
+		throws IOException {
 		if (isRequirePreferAsyncHeader(theRequestDetails)) {
 			ServletRequestUtil.validatePreferAsyncHeader(theRequestDetails, getOperationName());
 		}
 
 		if (myPartitionSettings.isPartitioningEnabled() && myPartitionSettings.isUnnamedPartitionMode()) {
 			theJobParameters.setRequestPartitionId(
-					parsePartitionIdsParameterAndInvokeInterceptors(theRequestDetails, thePartitionIds));
+				parsePartitionIdsParameterAndInvokeInterceptors(theRequestDetails, thePartitionIds));
 		}
 
 		List<IPrimitiveType<String>> urlsToReindex = getIfNull(theUrlsToReindex, List.of());
 		List<String> urls = urlsToReindex.stream()
-				.filter(Objects::nonNull)
-				.map(IPrimitiveType::getValueAsString)
-				.filter(StringUtils::isNotBlank)
-				.toList();
+			.filter(Objects::nonNull)
+			.map(IPrimitiveType::getValueAsString)
+			.filter(StringUtils::isNotBlank)
+			.toList();
 
 		if (isAutoExpandEmptyUrlList()) {
 			// if the url list is empty, use all the supported resource types to build the url list
 			// we can go back to no url scenario if all resource types point to the same partition
 			if (urls.isEmpty()) {
-				List<String> list = new ArrayList<>();
-				for (String t : myContext.getResourceTypes()) {
-					if (myDaoRegistry.isResourceTypeSupported(t)) {
-						list.add(t + "?");
-					}
-				}
-				urls = list;
+				urls = myContext.getResourceTypes().stream()
+					.filter(myResourceSupportedSvc::isSupported)
+					.map(resourceType -> resourceType + "?")
+					.collect(Collectors.toList());
 			}
 		}
 
 		if (!urls.isEmpty()) {
 			if (theJobParameters.getRequestPartitionId() == null) {
 				List<PartitionedUrl> partitionedUrls =
-						myJobPartitionProvider.getPartitionedUrls(theRequestDetails, urls);
+					myJobPartitionProvider.getPartitionedUrls(theRequestDetails, urls);
 				theJobParameters.addPartitionedUrls(partitionedUrls);
 			} else {
 				for (String url : urls) {
@@ -172,11 +174,11 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 			if (JpaConstants.OPERATION_BULK_PATCH_PARAM_DRY_RUN_MODE_COUNT.equalsIgnoreCase(dryRunMode)) {
 				theJobParameters.setDryRunMode(BaseBulkModifyJobParameters.DryRunMode.COUNT);
 			} else if (JpaConstants.OPERATION_BULK_PATCH_PARAM_DRY_RUN_MODE_COLLECT_CHANGES.equalsIgnoreCase(
-					dryRunMode)) {
+				dryRunMode)) {
 				theJobParameters.setDryRunMode(BaseBulkModifyJobParameters.DryRunMode.COLLECT_CHANGED);
 			} else {
 				throw new InvalidRequestException(
-						Msg.code(2814) + "Invalid dry run code: " + UrlUtil.sanitizeUrlPart(dryRunMode));
+					Msg.code(2814) + "Invalid dry run code: " + UrlUtil.sanitizeUrlPart(dryRunMode));
 			}
 		}
 		if (theBatchSize != null) {
@@ -202,7 +204,7 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 		// Create an OperationOutcome to return
 		IBaseOperationOutcome oo = OperationOutcomeUtil.newInstance(myContext);
 		String message =
-				getOperationName() + " job has been accepted. Poll for status at the following URL: " + pollUrl;
+			getOperationName() + " job has been accepted. Poll for status at the following URL: " + pollUrl;
 		String severity = OperationOutcomeUtil.OO_SEVERITY_INFO;
 		String code = OperationOutcomeUtil.OO_ISSUE_CODE_INFORMATIONAL;
 		OperationOutcomeUtil.addIssue(myContext, oo, severity, message, null, code);
@@ -210,27 +212,27 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 
 		// Provide a response
 		Multimap<String, String> additionalHeaders = ImmutableMultimap.<String, String>builder()
-				.put(Constants.HEADER_CONTENT_LOCATION, pollUrl)
-				.build();
+			.put(Constants.HEADER_CONTENT_LOCATION, pollUrl)
+			.build();
 
 		RestfulServerUtils.streamResponseAsResource(
-				theRequestDetails.getServer(),
-				oo,
-				Set.of(),
-				HttpServletResponse.SC_ACCEPTED,
-				additionalHeaders,
-				false,
-				false,
-				theRequestDetails,
-				null,
-				null);
+			theRequestDetails.getServer(),
+			oo,
+			Set.of(),
+			HttpServletResponse.SC_ACCEPTED,
+			additionalHeaders,
+			false,
+			false,
+			theRequestDetails,
+			null,
+			null);
 	}
 
 	/**
 	 * Subclasses may implement this method to provide post-processing on the response OperationOutcome
 	 */
 	protected void postProcessResponseOperationOutcome(
-			IBaseOperationOutcome theOo, ServletRequestDetails theRequestDetails) {
+		IBaseOperationOutcome theOo, ServletRequestDetails theRequestDetails) {
 		// nothing
 	}
 
@@ -257,16 +259,16 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 	 * for security)
 	 */
 	private RequestPartitionId parsePartitionIdsParameterAndInvokeInterceptors(
-			RequestDetails theRequestDetails, List<IPrimitiveType<String>> thePartitionIds) {
+		RequestDetails theRequestDetails, List<IPrimitiveType<String>> thePartitionIds) {
 		RequestPartitionId partitionId = parsePartitionIdsParameter(thePartitionIds);
 
 		// Invoke interceptor: STORAGE_PARTITION_SELECTED
 		CompositeInterceptorBroadcaster.newCompositeBroadcaster(myInterceptorService, theRequestDetails)
-				.ifHasCallHooks(Pointcut.STORAGE_PARTITION_SELECTED, () -> new HookParams()
-						.add(RequestDetails.class, theRequestDetails)
-						.addIfMatchesType(ServletRequestDetails.class, theRequestDetails)
-						.add(RequestPartitionId.class, partitionId)
-						.add(RuntimeResourceDefinition.class, null));
+			.ifHasCallHooks(Pointcut.STORAGE_PARTITION_SELECTED, () -> new HookParams()
+				.add(RequestDetails.class, theRequestDetails)
+				.addIfMatchesType(ServletRequestDetails.class, theRequestDetails)
+				.add(RequestPartitionId.class, partitionId)
+				.add(RuntimeResourceDefinition.class, null));
 
 		return partitionId;
 	}
@@ -274,12 +276,12 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 	@Nonnull
 	private String createPollUrl(ServletRequestDetails theRequestDetails, String jobInstanceId) {
 		ServletContext servletContext =
-				(ServletContext) theRequestDetails.getServletAttribute(RestfulServer.SERVLET_CONTEXT_ATTRIBUTE);
+			(ServletContext) theRequestDetails.getServletAttribute(RestfulServer.SERVLET_CONTEXT_ATTRIBUTE);
 		HttpServletRequest servletRequest = theRequestDetails.getServletRequest();
 		String baseUrl = theRequestDetails
-				.getServer()
-				.getServerAddressStrategy()
-				.determineServerBase(servletContext, servletRequest);
+			.getServer()
+			.getServerAddressStrategy()
+			.determineServerBase(servletContext, servletRequest);
 
 		StringBuilder pollUrlBuilder = new StringBuilder(baseUrl);
 		if (!baseUrl.endsWith("/")) {
@@ -297,8 +299,8 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 	 * Subclasses should call this method to poll for job status
 	 */
 	protected void pollForJobStatus(
-			ServletRequestDetails theRequestDetails, IPrimitiveType<String> theJobId, IPrimitiveType<String> theReturn)
-			throws IOException {
+		ServletRequestDetails theRequestDetails, IPrimitiveType<String> theJobId, IPrimitiveType<String> theReturn)
+		throws IOException {
 		ValidateUtil.isTrueOrThrowInvalidRequest(theJobId != null && theJobId.hasValue(), "Missing job id");
 
 		String returnValue = null;
@@ -311,12 +313,12 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 			instance = myJobCoordinator.getInstance(theJobId.getValue());
 		} catch (ResourceNotFoundException e) {
 			throw new ResourceNotFoundException(
-					Msg.code(2787) + "Invalid/unknown job ID: " + UrlUtil.sanitizeUrlPart(theJobId.getValue()));
+				Msg.code(2787) + "Invalid/unknown job ID: " + UrlUtil.sanitizeUrlPart(theJobId.getValue()));
 		}
 
 		ValidateUtil.isTrueOrThrowInvalidRequest(
-				instance.getJobDefinitionId().equals(getJobId()),
-				"Job ID does not correspond to a " + getOperationName() + " job");
+			instance.getJobDefinitionId().equals(getJobId()),
+			"Job ID does not correspond to a " + getOperationName() + " job");
 
 		int status = HttpStatus.SC_INTERNAL_SERVER_ERROR;
 		List<String> messages = new ArrayList<>();
@@ -363,36 +365,36 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 					messages.add(progressMessage);
 				} else {
 					BulkModifyResourcesResultsJson results =
-							JsonUtil.deserialize(reportText, BulkModifyResourcesResultsJson.class);
+						JsonUtil.deserialize(reportText, BulkModifyResourcesResultsJson.class);
 					BaseBulkModifyJobParameters jobParameters =
-							instance.getParameters(BaseBulkModifyJobParameters.DeserializingImpl.class);
+						instance.getParameters(BaseBulkModifyJobParameters.DeserializingImpl.class);
 					boolean isDryRunCollectChanges = jobParameters.isDryRun()
-							&& jobParameters.getDryRunMode() == BaseBulkModifyJobParameters.DryRunMode.COLLECT_CHANGED;
+						&& jobParameters.getDryRunMode() == BaseBulkModifyJobParameters.DryRunMode.COLLECT_CHANGED;
 
 					if (JpaConstants.OPERATION_BULK_PATCH_STATUS_PARAM_RETURN_VALUE_REPORT.equals(returnValue)) {
 						returnString = results.getReport();
 					} else if (JpaConstants.OPERATION_BULK_PATCH_STATUS_PARAM_RETURN_VALUE_DRYRUN_CHANGES.equals(
-							returnValue)) {
+						returnValue)) {
 						if (!isDryRunCollectChanges) {
 							throw new InvalidRequestException(
-									Msg.code(2815) + "Changes response can only be provided for "
-											+ JpaConstants.OPERATION_BULK_PATCH_PARAM_DRY_RUN + " jobs with "
-											+ JpaConstants.OPERATION_BULK_PATCH_PARAM_DRY_RUN_MODE + "="
-											+ JpaConstants.OPERATION_BULK_PATCH_PARAM_DRY_RUN_MODE_COLLECT_CHANGES);
+								Msg.code(2815) + "Changes response can only be provided for "
+									+ JpaConstants.OPERATION_BULK_PATCH_PARAM_DRY_RUN + " jobs with "
+									+ JpaConstants.OPERATION_BULK_PATCH_PARAM_DRY_RUN_MODE + "="
+									+ JpaConstants.OPERATION_BULK_PATCH_PARAM_DRY_RUN_MODE_COLLECT_CHANGES);
 						}
 
 						returnBundle = createChangesBundle(results);
 					}
 					messages.add(results.getReport());
 					messages.add("Access raw text report at URL: "
-							+ createPollUrl(theRequestDetails, instance.getInstanceId()) + "&"
-							+ JpaConstants.OPERATION_BULK_PATCH_STATUS_PARAM_RETURN + "="
-							+ JpaConstants.OPERATION_BULK_PATCH_STATUS_PARAM_RETURN_VALUE_REPORT);
+						+ createPollUrl(theRequestDetails, instance.getInstanceId()) + "&"
+						+ JpaConstants.OPERATION_BULK_PATCH_STATUS_PARAM_RETURN + "="
+						+ JpaConstants.OPERATION_BULK_PATCH_STATUS_PARAM_RETURN_VALUE_REPORT);
 					if (isDryRunCollectChanges) {
 						messages.add("Access collected dry-run changes at URL: "
-								+ createPollUrl(theRequestDetails, instance.getInstanceId()) + "&"
-								+ JpaConstants.OPERATION_BULK_PATCH_STATUS_PARAM_RETURN + "="
-								+ JpaConstants.OPERATION_BULK_PATCH_STATUS_PARAM_RETURN_VALUE_DRYRUN_CHANGES);
+							+ createPollUrl(theRequestDetails, instance.getInstanceId()) + "&"
+							+ JpaConstants.OPERATION_BULK_PATCH_STATUS_PARAM_RETURN + "="
+							+ JpaConstants.OPERATION_BULK_PATCH_STATUS_PARAM_RETURN_VALUE_DRYRUN_CHANGES);
 					}
 				}
 				respondUsingBundle = true;
@@ -415,16 +417,16 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 
 		if (returnBundle != null) {
 			RestfulServerUtils.streamResponseAsResource(
-					theRequestDetails.getServer(),
-					returnBundle,
-					Set.of(),
-					status,
-					additionalHeaders.build(),
-					false,
-					false,
-					theRequestDetails,
-					null,
-					null);
+				theRequestDetails.getServer(),
+				returnBundle,
+				Set.of(),
+				status,
+				additionalHeaders.build(),
+				false,
+				false,
+				theRequestDetails,
+				null,
+				null);
 			return;
 		}
 
@@ -467,16 +469,16 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 		Multimap<String, String> additionalHeaders1 = additionalHeaders.build();
 
 		RestfulServerUtils.streamResponseAsResource(
-				theRequestDetails.getServer(),
-				responseResource,
-				Set.of(),
-				status,
-				additionalHeaders1,
-				false,
-				false,
-				theRequestDetails,
-				null,
-				null);
+			theRequestDetails.getServer(),
+			responseResource,
+			Set.of(),
+			status,
+			additionalHeaders1,
+			false,
+			false,
+			theRequestDetails,
+			null,
+			null);
 	}
 
 	private IBaseBundle createChangesBundle(BulkModifyResourcesResultsJson theResultsJson) {
@@ -494,10 +496,10 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 	}
 
 	private void writeResponseWithStringBody(
-			HttpServletResponse theServletResponse,
-			ImmutableMultimap.Builder<String, String> theAdditionalHeaders,
-			String theResponseString)
-			throws IOException {
+		HttpServletResponse theServletResponse,
+		ImmutableMultimap.Builder<String, String> theAdditionalHeaders,
+		String theResponseString)
+		throws IOException {
 		theServletResponse.setStatus(HttpStatus.SC_OK);
 		theServletResponse.setContentType(Constants.CT_TEXT);
 		theServletResponse.setCharacterEncoding(Constants.CHARSET_NAME_UTF8);
@@ -560,7 +562,7 @@ public abstract class BaseBulkModifyOrRewriteProvider {
 						partitionIds.add(Integer.parseInt(trim(value)));
 					} catch (NumberFormatException e) {
 						throw new InvalidRequestException(
-								Msg.code(2820) + "Invalid partition ID: " + UrlUtil.sanitizeUrlPart(value));
+							Msg.code(2820) + "Invalid partition ID: " + UrlUtil.sanitizeUrlPart(value));
 					}
 				}
 			}
