@@ -103,6 +103,35 @@ public class QuestionnaireValidatorR4Test extends BaseValidationTestWithInlineMo
 		}
 	}
 
+	/**
+	 * FUT1-23535: Regression test for que-7 on Questionnaire.item.enableWhen.
+	 *
+	 * The base R4 constraint expression as published is {@code operator = 'exists' implies (answer is Boolean)}.
+	 * The core FHIRPath engine compares the FHIR primitive type name {@code boolean} (lowercase) against the
+	 * literal {@code Boolean} (capitalised) with case-sensitive {@code .equals}, so every Questionnaire that uses
+	 * {@code operator: "exists"} with {@code answerBoolean: true} fails que-7. The fix lowercases {@code Boolean}
+	 * to {@code boolean} in profiles-resources.xml so the type name matches.
+	 */
+	@Test
+	public void testQuestionnaire_enableWhenExistsWithAnswerBoolean_passesQue7() {
+		String json = "{ \"resourceType\": \"Questionnaire\", \"status\": \"draft\", \"item\": [" +
+			"{ \"linkId\": \"q1\", \"type\": \"boolean\", \"text\": \"q1\", \"required\": false }," +
+			"{ \"linkId\": \"q2\", \"type\": \"choice\", \"text\": \"q2\", \"required\": false," +
+			"  \"enableWhen\": [ { \"question\": \"q1\", \"operator\": \"exists\", \"answerBoolean\": true } ]," +
+			"  \"answerOption\": [ { \"valueString\": \"A\" } ] } ] }";
+
+		Questionnaire q = ourCtx.newJsonParser().parseResource(Questionnaire.class, json);
+		ValidationResult errors = myVal.validateWithResult(q);
+
+		ourLog.info(errors.toString());
+		assertThat(errors.getMessages().stream()
+			.filter(t -> t.getSeverity().ordinal() >= ResultSeverityEnum.ERROR.ordinal())
+			.filter(t -> t.getMessage().contains("que-7"))
+			.collect(Collectors.toList()))
+			.as("que-7 must not fire for operator=exists with answerBoolean=true")
+			.isEmpty();
+	}
+
 	@Test
 	public void testQuestionnaireWithCustomExtensionDomain() {
 		String extensionUrl = "http://my.own.domain/StructureDefinition/";

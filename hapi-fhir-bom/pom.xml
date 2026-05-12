@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ca.uhn.hapi.fhir</groupId>
 	<artifactId>hapi-fhir-bom</artifactId>
-	<version>8.6.5-sse1</version>
+	<version>8.6.5-sse2</version>
 
 	<packaging>pom</packaging>
 	<name>HAPI FHIR BOM</name>
@@ -18,7 +18,7 @@
 	</parent>
 	<properties>
 		<hapifhir.version>8.6.5</hapifhir.version>
-		<sse.version>sse1</sse.version>
+		<sse.version>sse2</sse.version>
 	</properties>
 
 	<dependencyManagement>
