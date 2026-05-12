@@ -285684,7 +285684,7 @@
        <key value="que-7"></key>
        <severity value="error"></severity>
        <human value="If the operator is 'exists', the value must be a boolean"></human>
-       <expression value="operator = 'exists' implies (answer is Boolean)"></expression>
+       <expression value="operator = 'exists' implies (answer is boolean)"></expression>
        <xpath value="f:operator/@value != 'exists' or exists(f:answerBoolean)"></xpath>
       </constraint>
       <isModifier value="true"></isModifier>
@@ -287384,7 +287384,7 @@
        <key value="que-7"></key>
        <severity value="error"></severity>
        <human value="If the operator is 'exists', the value must be a boolean"></human>
-       <expression value="operator = 'exists' implies (answer is Boolean)"></expression>
+       <expression value="operator = 'exists' implies (answer is boolean)"></expression>
        <xpath value="f:operator/@value != 'exists' or exists(f:answerBoolean)"></xpath>
       </constraint>
       <isModifier value="true"></isModifier>
