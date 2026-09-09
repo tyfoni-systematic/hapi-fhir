@@ -25,6 +25,8 @@ import ca.uhn.fhir.jpa.api.config.JpaStorageSettings;
 import ca.uhn.fhir.jpa.batch2.JpaBatch2Config;
 import ca.uhn.fhir.jpa.binary.api.IBinaryStorageSvc;
 import ca.uhn.fhir.jpa.binstore.MemoryBinaryStorageSvcImpl;
+import ca.uhn.fhir.context.support.IValidationSupport;
+import ca.uhn.fhir.jpa.config.JpaConfig;
 import ca.uhn.fhir.jpa.config.PackageLoaderConfig;
 import ca.uhn.fhir.jpa.config.r4.JpaR4Config;
 import ca.uhn.fhir.jpa.config.util.HapiEntityManagerFactoryUtil;
@@ -45,6 +47,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -109,6 +112,33 @@ public class TestR4Config {
 	}
 
 	private final Map<Connection, Exception> myConnectionRequestStackTraces = Collections.synchronizedMap(new LinkedHashMap<>());
+
+	/**
+	 * Marks the JPA validation support chain as the primary {@link IValidationSupport} for tests.
+	 * <p>
+	 * This fork removed {@code @Primary} from {@code JpaConfig#jpaValidationSupportChain()} in
+	 * FUT1-22151, because a server built on the fork needs to contribute its own primary validation
+	 * support and two primary beans of the same type are an error. That server configuration is not
+	 * loaded here, so the upstream test contexts are left with several {@link IValidationSupport}
+	 * beans and no way for Spring to choose between them. Restoring the marker for tests only
+	 * changes nothing for a real server.
+	 * </p>
+	 * <p>
+	 * This flips the existing bean definition rather than contributing a delegating bean, because
+	 * the chain resolves an {@link IValidationSupport} while initialising itself and a delegate
+	 * would therefore be a circular reference.
+	 * </p>
+	 */
+	@Bean
+	public static BeanFactoryPostProcessor markJpaValidationSupportChainAsPrimaryForTests() {
+		return beanFactory -> {
+			if (beanFactory.containsBeanDefinition(JpaConfig.JPA_VALIDATION_SUPPORT_CHAIN)) {
+				beanFactory
+						.getBeanDefinition(JpaConfig.JPA_VALIDATION_SUPPORT_CHAIN)
+						.setPrimary(true);
+			}
+		};
+	}
 
 	@Autowired
 	TestHSearchAddInConfig.IHSearchConfigurer hibernateSearchConfigurer;
@@ -242,6 +272,14 @@ public class TestR4Config {
 		extraProperties.put("hibernate.show_sql", "false");
 		extraProperties.put("hibernate.hbm2ddl.auto", "update");
 		extraProperties.put("hibernate.dialect", getHibernateDialect());
+		/*
+		 * Hold the connection for the duration of the transaction, which is what
+		 * HibernateJpaDialect requires in order to honour a custom isolation level. This fork sets
+		 * READ_COMMITTED explicitly on the search transaction (FUT1-8341), and without this the
+		 * dialect refuses with "HibernateJpaDialect is not allowed to support custom isolation
+		 * levels". A real server on this fork runs under JTA and does not need the setting.
+		 */
+		extraProperties.put("hibernate.connection.handling_mode", "DELAYED_ACQUISITION_AND_HOLD");
 
 		hibernateSearchConfigurer.apply(extraProperties);
 
