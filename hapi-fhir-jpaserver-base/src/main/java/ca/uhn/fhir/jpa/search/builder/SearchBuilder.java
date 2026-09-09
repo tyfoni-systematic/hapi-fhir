@@ -60,6 +60,7 @@ import ca.uhn.fhir.jpa.model.search.SearchRuntimeDetails;
 import ca.uhn.fhir.jpa.model.search.StorageProcessingMessage;
 import ca.uhn.fhir.jpa.model.util.JpaConstants;
 import ca.uhn.fhir.jpa.partition.IRequestPartitionHelperSvc;
+import ca.uhn.fhir.jpa.search.ISearchPreFetchThresholdProvider;
 import ca.uhn.fhir.jpa.search.SearchConstants;
 import ca.uhn.fhir.jpa.search.builder.models.ResolvedSearchQueryExecutor;
 import ca.uhn.fhir.jpa.search.builder.models.SearchQueryProperties;
@@ -246,6 +247,9 @@ public class SearchBuilder implements ISearchBuilder<JpaPid> {
 
 	@Autowired
 	private IResourceHistoryTagDao myResourceHistoryTagDao;
+
+	@Autowired
+	private ISearchPreFetchThresholdProvider mySearchPreFetchThresholdProvider;
 
 	@Autowired
 	private IRequestPartitionHelperSvc myPartitionHelperSvc;
@@ -465,6 +469,8 @@ public class SearchBuilder implements ISearchBuilder<JpaPid> {
 			SearchRuntimeDetails theSearchRuntimeDetails) {
 		ArrayList<ISearchQueryExecutor> queries = new ArrayList<>();
 
+		callPreSearchQueryExecutionHook(theParams, theRequest);
+
 		if (checkUseHibernateSearch()) {
 			// we're going to run at least part of the search against the Fulltext service.
 
@@ -552,6 +558,28 @@ public class SearchBuilder implements ISearchBuilder<JpaPid> {
 		}
 
 		return queries;
+	}
+
+	/**
+	 * Calls {@link Pointcut#STORAGE_PRESEARCH_QUERY_EXECUTION} immediately before the queries for a
+	 * search pass are generated. A transaction is active at this point (asserted by the callers of
+	 * this method), and the queries will be executed on the same persistence context, so hooks may
+	 * apply transaction scoped settings to the session and rely on them applying to the queries.
+	 * <p>
+	 * This is called once per search pass, which includes each additional pass triggered by a client
+	 * paging past a pre-fetch threshold, and separately for the count query.
+	 * </p>
+	 */
+	private void callPreSearchQueryExecutionHook(SearchParameterMap theParams, RequestDetails theRequest) {
+		IInterceptorBroadcaster compositeBroadcaster =
+				CompositeInterceptorBroadcaster.newCompositeBroadcaster(myInterceptorBroadcaster, theRequest);
+		if (compositeBroadcaster.hasHooks(Pointcut.STORAGE_PRESEARCH_QUERY_EXECUTION)) {
+			HookParams params = new HookParams()
+					.add(SearchParameterMap.class, theParams)
+					.add(RequestDetails.class, theRequest)
+					.addIfMatchesType(ServletRequestDetails.class, theRequest);
+			compositeBroadcaster.callHooks(Pointcut.STORAGE_PRESEARCH_QUERY_EXECUTION, params);
+		}
 	}
 
 	/**
@@ -3023,16 +3051,17 @@ public class SearchBuilder implements ISearchBuilder<JpaPid> {
 										// if we're not using the database to deduplicate
 										// we should recheck our memory usage
 										// the prefetch size check is future proofing
-										int prefetchSize = myStorageSettings
-												.getSearchPreFetchThresholds()
-												.size();
-										if (prefetchSize > 0) {
-											if (myStorageSettings
-															.getSearchPreFetchThresholds()
-															.get(prefetchSize - 1)
-													< mySearchProperties.getMaxResultsRequested()) {
-												mySearchProperties.setDeduplicateInDatabase(true);
-											}
+										// Note: this must use the same thresholds that SearchTask used to
+										// size this pass, not the global ones, or the two will disagree for
+										// searches whose thresholds are resolved per search.
+										List<Integer> prefetchThresholds =
+												mySearchPreFetchThresholdProvider.getPreFetchThresholds(
+														myResourceName, myParams);
+										int prefetchSize = prefetchThresholds.size();
+										if (prefetchSize > 0
+												&& prefetchThresholds.get(prefetchSize - 1)
+														< mySearchProperties.getMaxResultsRequested()) {
+											mySearchProperties.setDeduplicateInDatabase(true);
 										}
 									}
 

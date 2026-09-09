@@ -36,10 +36,12 @@ import ca.uhn.fhir.jpa.dao.tx.HapiTransactionService;
 import ca.uhn.fhir.jpa.model.config.PartitionSettings;
 import ca.uhn.fhir.jpa.partition.IRequestPartitionHelperSvc;
 import ca.uhn.fhir.jpa.search.ExceptionService;
+import ca.uhn.fhir.jpa.search.ISearchPreFetchThresholdProvider;
 import ca.uhn.fhir.jpa.search.ISynchronousSearchSvc;
 import ca.uhn.fhir.jpa.search.PersistedJpaBundleProviderFactory;
 import ca.uhn.fhir.jpa.search.SearchCoordinatorSvcImpl;
 import ca.uhn.fhir.jpa.search.SearchStrategyFactory;
+import ca.uhn.fhir.jpa.search.StorageSettingsSearchPreFetchThresholdProvider;
 import ca.uhn.fhir.jpa.search.builder.SearchBuilder;
 import ca.uhn.fhir.jpa.search.builder.sql.SqlObjectFactory;
 import ca.uhn.fhir.jpa.search.builder.tasks.SearchContinuationTask;
@@ -136,6 +138,21 @@ public class SearchConfig {
 	@Autowired
 	private IJpaStorageResourceParser myJpaStorageResourceParser;
 
+	@Autowired
+	private ISearchPreFetchThresholdProvider mySearchPreFetchThresholdProvider;
+
+	/**
+	 * Supplies the pre-fetch thresholds for an individual search. The default applies the globally
+	 * configured {@link JpaStorageSettings#getSearchPreFetchThresholds()} to every search. A server
+	 * that wants to vary them per search may contribute its own primary
+	 * {@link ISearchPreFetchThresholdProvider} bean, which will be injected here in place of this
+	 * one.
+	 */
+	@Bean
+	public ISearchPreFetchThresholdProvider searchPreFetchThresholdProvider() {
+		return new StorageSettingsSearchPreFetchThresholdProvider(myStorageSettings);
+	}
+
 	@Bean
 	public ISearchCoordinatorSvc searchCoordinatorSvc() {
 		return new SearchCoordinatorSvcImpl(
@@ -194,7 +211,8 @@ public class SearchConfig {
 				mySearchResultCacheSvc,
 				myStorageSettings,
 				mySearchCacheSvc,
-				myPagingProvider);
+				myPagingProvider,
+				mySearchPreFetchThresholdProvider);
 	}
 
 	@Bean(name = CONTINUE_TASK)
@@ -210,6 +228,7 @@ public class SearchConfig {
 				myStorageSettings,
 				mySearchCacheSvc,
 				myPagingProvider,
+				mySearchPreFetchThresholdProvider,
 				exceptionService() // singleton
 				);
 	}

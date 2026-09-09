@@ -35,6 +35,7 @@ import ca.uhn.fhir.jpa.interceptor.JpaPreResourceAccessDetails;
 import ca.uhn.fhir.jpa.model.dao.JpaPid;
 import ca.uhn.fhir.jpa.model.search.SearchRuntimeDetails;
 import ca.uhn.fhir.jpa.model.search.SearchStatusEnum;
+import ca.uhn.fhir.jpa.search.ISearchPreFetchThresholdProvider;
 import ca.uhn.fhir.jpa.search.cache.ISearchCacheSvc;
 import ca.uhn.fhir.jpa.search.cache.ISearchResultCacheSvc;
 import ca.uhn.fhir.jpa.searchparam.SearchParameterMap;
@@ -114,6 +115,7 @@ public class SearchTask implements Callable<Void> {
 	private final JpaStorageSettings myStorageSettings;
 	private final ISearchCacheSvc mySearchCacheSvc;
 	private final IPagingProvider myPagingProvider;
+	private final ISearchPreFetchThresholdProvider myPreFetchThresholdProvider;
 	private final IInterceptorBroadcaster myCompositeBroadcaster;
 	private Search mySearch;
 	private boolean myAbortRequested;
@@ -140,7 +142,8 @@ public class SearchTask implements Callable<Void> {
 			ISearchResultCacheSvc theSearchResultCacheSvc,
 			JpaStorageSettings theStorageSettings,
 			ISearchCacheSvc theSearchCacheSvc,
-			IPagingProvider thePagingProvider) {
+			IPagingProvider thePagingProvider,
+			ISearchPreFetchThresholdProvider thePreFetchThresholdProvider) {
 		// beans
 		myTxService = theManagedTxManager;
 		myContext = theContext;
@@ -150,6 +153,7 @@ public class SearchTask implements Callable<Void> {
 		myStorageSettings = theStorageSettings;
 		mySearchCacheSvc = theSearchCacheSvc;
 		myPagingProvider = thePagingProvider;
+		myPreFetchThresholdProvider = thePreFetchThresholdProvider;
 
 		// values
 		myOnRemove = theCreationParams.OnRemove;
@@ -448,14 +452,15 @@ public class SearchTask implements Callable<Void> {
 			// Create an initial search in the DB and give it an ID
 			saveSearch();
 
-			myTxService.withRequest(myRequest)
-				.withTransactionDetails(null)
-				.withPropagation(Propagation.REQUIRED)
-				.withRequestPartitionId(myRequestPartitionId)
-				.withIsolation(READ_COMMITTED)
-				.onRollback(null)
-				.withTimeout(myStorageSettings.getSearchQueryTimeout())
-				.execute(this::doSearch);
+			myTxService
+					.withRequest(myRequest)
+					.withTransactionDetails(null)
+					.withPropagation(Propagation.REQUIRED)
+					.withRequestPartitionId(myRequestPartitionId)
+					.withIsolation(READ_COMMITTED)
+					.onRollback(null)
+					.withTimeout(myStorageSettings.getSearchQueryTimeout())
+					.execute(this::doSearch);
 
 			mySearchRuntimeDetails.setSearchStatus(mySearch.getStatus());
 			if (mySearch.getStatus() == SearchStatusEnum.FINISHED) {
@@ -615,8 +620,9 @@ public class SearchTask implements Callable<Void> {
 		}
 
 		// iterate through the search thresholds
-		for (Iterator<Integer> iter =
-						myStorageSettings.getSearchPreFetchThresholds().iterator();
+		for (Iterator<Integer> iter = myPreFetchThresholdProvider
+						.getPreFetchThresholds(myResourceType, myParams)
+						.iterator();
 				iter.hasNext(); ) {
 			int next = iter.next();
 			if (next != -1 && next <= currentlyLoaded) {

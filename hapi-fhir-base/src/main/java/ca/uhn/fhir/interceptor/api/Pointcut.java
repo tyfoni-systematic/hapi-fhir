@@ -1537,6 +1537,63 @@ public enum Pointcut implements IPointcut {
 
 	/**
 	 * <b>Storage Hook:</b>
+	 * Invoked immediately before the SQL for a search is generated and executed, from within the
+	 * transaction that will execute it. This is intended for hooks that need to influence the
+	 * database session that the query will run on, for example to apply session-scoped query
+	 * planner settings for a particular kind of search.
+	 * <p>
+	 * A transaction is guaranteed to be active when this pointcut is invoked, and the query will
+	 * be executed on the same persistence context, so a hook may issue transaction-scoped
+	 * statements and rely on them applying to the query.
+	 * </p>
+	 * <p>
+	 * This is invoked once per search pass, which means it is also invoked for each additional
+	 * pass triggered by a client paging past a pre-fetch threshold, and separately for the
+	 * <code>SELECT COUNT(*)</code> query when a total is requested. Hooks should therefore be
+	 * cheap, and must not assume they are called only once per search.
+	 * </p>
+	 * <p>
+	 * Note that this is invoked before it is known whether the search will be satisfied from the
+	 * fulltext index, so it may also be invoked for a search that ultimately issues no SQL against
+	 * the resource tables.
+	 * </p>
+	 * <p>
+	 * This hook cannot modify the search. Use {@link Pointcut#STORAGE_PRESEARCH_REGISTERED} to
+	 * modify a search before it occurs.
+	 * </p>
+	 * Hooks may accept the following parameters:
+	 * <ul>
+	 * <li>
+	 * ca.uhn.fhir.jpa.searchparam.SearchParameterMap - The details of the search that is about to be executed.
+	 * Modifications made to this map will not be reflected in the query being executed.
+	 * </li>
+	 * <li>
+	 * ca.uhn.fhir.rest.api.server.RequestDetails - A bean containing details about the request that is about to be processed, including details such as the
+	 * resource type and logical ID (if any) and other FHIR-specific aspects of the request which have been
+	 * pulled out of the servlet request. Note that the bean
+	 * properties are not all guaranteed to be populated, depending on how early during processing the
+	 * exception occurred. <b>Note that this parameter may be null in contexts where the request is not
+	 * known, such as while processing searches</b>
+	 * </li>
+	 * <li>
+	 * ca.uhn.fhir.rest.server.servlet.ServletRequestDetails - A bean containing details about the request that is about to be processed, including details such as the
+	 * resource type and logical ID (if any) and other FHIR-specific aspects of the request which have been
+	 * pulled out of the servlet request. This parameter is identical to the RequestDetails parameter above but will
+	 * only be populated when operating in a RestfulServer implementation. It is provided as a convenience.
+	 * </li>
+	 * </ul>
+	 * <p>
+	 * Hooks should return <code>void</code>.
+	 * </p>
+	 */
+	STORAGE_PRESEARCH_QUERY_EXECUTION(
+			void.class,
+			"ca.uhn.fhir.jpa.searchparam.SearchParameterMap",
+			"ca.uhn.fhir.rest.api.server.RequestDetails",
+			"ca.uhn.fhir.rest.server.servlet.ServletRequestDetails"),
+
+	/**
+	 * <b>Storage Hook:</b>
 	 * Invoked when one or more resources may be returned to the user, whether as a part of a READ,
 	 * a SEARCH, or even as the response to a CREATE/UPDATE, etc.
 	 * <p>

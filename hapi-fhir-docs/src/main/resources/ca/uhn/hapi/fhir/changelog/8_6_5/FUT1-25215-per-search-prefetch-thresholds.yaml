@@ -1,0 +1,13 @@
+---
+type: add
+jira: FUT1-25215
+title: "Search pre-fetch thresholds can now be resolved per search instead of only globally. A
+   new `ISearchPreFetchThresholdProvider` bean supplies the thresholds for an individual search;
+   the default implementation applies the globally configured
+   `JpaStorageSettings#getSearchPreFetchThresholds()` to every search, so behaviour is unchanged
+   unless a server contributes its own primary bean. This makes it possible to use, for example,
+   a single unbounded pass for searches that clients are known to page through to the end of,
+   while leaving the global thresholds in place for everything else. Implementations must be a
+   pure function of the resource type and `SearchParameterMap`, since a search that stops at a
+   threshold is resumed by a later request that re-resolves the thresholds from the persisted
+   search parameters alone."

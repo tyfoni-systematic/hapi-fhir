@@ -27,6 +27,7 @@ import ca.uhn.fhir.jpa.dao.SearchBuilderFactory;
 import ca.uhn.fhir.jpa.dao.tx.HapiTransactionService;
 import ca.uhn.fhir.jpa.model.dao.JpaPid;
 import ca.uhn.fhir.jpa.search.ExceptionService;
+import ca.uhn.fhir.jpa.search.ISearchPreFetchThresholdProvider;
 import ca.uhn.fhir.jpa.search.cache.ISearchCacheSvc;
 import ca.uhn.fhir.jpa.search.cache.ISearchResultCacheSvc;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
@@ -51,6 +52,7 @@ public class SearchContinuationTask extends SearchTask {
 			JpaStorageSettings theStorageSettings,
 			ISearchCacheSvc theSearchCacheSvc,
 			IPagingProvider thePagingProvider,
+			ISearchPreFetchThresholdProvider thePreFetchThresholdProvider,
 			ExceptionService theExceptionSvc) {
 		super(
 				theCreationParams,
@@ -61,7 +63,8 @@ public class SearchContinuationTask extends SearchTask {
 				theSearchResultCacheSvc,
 				theStorageSettings,
 				theSearchCacheSvc,
-				thePagingProvider);
+				thePagingProvider,
+				thePreFetchThresholdProvider);
 
 		myRequestDetails = theCreationParams.Request;
 		myExceptionSvc = theExceptionSvc;

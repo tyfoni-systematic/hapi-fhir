@@ -1,0 +1,10 @@
+---
+type: add
+jira: FUT1-25215
+title: "A new `STORAGE_PRESEARCH_QUERY_EXECUTION` pointcut has been added, which is invoked
+   immediately before the queries for a JPA search pass are generated, from within the
+   transaction that will execute them. This allows an interceptor to apply transaction scoped
+   settings to the database session that the search will run on, for example query planner
+   settings that are appropriate for a particular kind of search. The pointcut is invoked once
+   per search pass, meaning it is also invoked for each additional pass triggered by a client
+   paging past a pre-fetch threshold, and separately for the count query."
