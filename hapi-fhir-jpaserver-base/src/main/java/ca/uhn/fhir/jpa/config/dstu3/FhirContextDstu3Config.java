@@ -23,7 +23,6 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.narrative.INarrativeGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 
 import static ca.uhn.fhir.jpa.config.r4.FhirContextR4Config.configureFhirContext;
 
