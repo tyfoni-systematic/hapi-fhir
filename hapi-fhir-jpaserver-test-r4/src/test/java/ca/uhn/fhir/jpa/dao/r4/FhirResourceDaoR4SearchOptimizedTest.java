@@ -1,6 +1,9 @@
 package ca.uhn.fhir.jpa.dao.r4;
 
 import ca.uhn.fhir.context.RuntimeResourceDefinition;
+import ca.uhn.fhir.interceptor.api.Hook;
+import ca.uhn.fhir.interceptor.api.Interceptor;
+import ca.uhn.fhir.interceptor.api.Pointcut;
 import ca.uhn.fhir.jpa.api.config.JpaStorageSettings;
 import ca.uhn.fhir.jpa.dao.data.ISearchDao;
 import ca.uhn.fhir.jpa.dao.data.ISearchResultDao;
@@ -20,6 +23,7 @@ import ca.uhn.fhir.rest.api.SearchTotalModeEnum;
 import ca.uhn.fhir.rest.api.SortSpec;
 import ca.uhn.fhir.rest.api.SummaryEnum;
 import ca.uhn.fhir.rest.api.server.IBundleProvider;
+import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.api.server.SystemRequestDetails;
 import ca.uhn.fhir.rest.param.DateRangeParam;
 import ca.uhn.fhir.rest.param.ReferenceOrListParam;
@@ -65,6 +69,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
@@ -144,6 +149,107 @@ public class FhirResourceDaoR4SearchOptimizedTest extends BaseJpaR4Test {
 		List<String> ids = toUnqualifiedVersionlessIdValues(results, 0, 10, true);
 		assertThat(ids).isEmpty();
 		assertEquals(200, myDatabaseBackedPagingProvider.retrieveResultList(null, uuid).size().intValue());
+	}
+
+	/**
+	 * Counts invocations of {@link Pointcut#STORAGE_PRESEARCH_QUERY_EXECUTION}, recording the
+	 * {@link SearchParameterMap} it was handed each time.
+	 */
+	@Interceptor
+	public static class PreSearchQueryExecutionCounter {
+
+		private final List<SearchParameterMap> myInvocations = new CopyOnWriteArrayList<>();
+
+		@Hook(Pointcut.STORAGE_PRESEARCH_QUERY_EXECUTION)
+		public void preSearchQueryExecution(SearchParameterMap theParams, RequestDetails theRequestDetails) {
+			myInvocations.add(theParams);
+		}
+
+		public int count() {
+			return myInvocations.size();
+		}
+
+		public List<SearchParameterMap> getInvocations() {
+			return myInvocations;
+		}
+	}
+
+	/**
+	 * The hook must fire for the initial search pass, and again for each additional pass triggered
+	 * by a client paging past a pre-fetch threshold. The second half is the important one: a
+	 * continuation pass re-executes the whole query, so anything applying session scoped settings
+	 * to the search needs the chance to do so again.
+	 * <p>
+	 * These searches deliberately do not sort, so that they do not depend on the collation this
+	 * fork applies to sorted queries, which the H2 test database cannot parse.
+	 * </p>
+	 */
+	@Test
+	public void testPreSearchQueryExecutionHookIsInvokedForEachSearchPass() {
+		create200Patients();
+
+		myStorageSettings.setSearchPreFetchThresholds(Arrays.asList(20, 50, 190));
+
+		PreSearchQueryExecutionCounter interceptor = new PreSearchQueryExecutionCounter();
+		myInterceptorRegistry.registerInterceptor(interceptor);
+		try {
+			SearchParameterMap params = new SearchParameterMap();
+			params.add("active", new TokenParam(null, "true"));
+			IBundleProvider results = myPatientDao.search(params);
+			String uuid = results.getUuid();
+
+			assertThat(toUnqualifiedVersionlessIdValues(results, 0, 10, true)).hasSize(10);
+
+			int afterFirstPass = interceptor.count();
+			assertThat(afterFirstPass)
+				.as("Hook should have fired for the initial search pass")
+				.isGreaterThanOrEqualTo(1);
+
+			// The first pass stops at the first pre-fetch threshold
+			await().until(() -> runInTransaction(() -> mySearchEntityDao
+				.findByUuidAndFetchIncludes(uuid)
+				.orElseThrow(() -> new InternalErrorException(""))
+				.getStatus() == SearchStatusEnum.PASSCMPLET));
+
+			// Paging past that threshold starts a continuation pass, which re-executes the query
+			results = myDatabaseBackedPagingProvider.retrieveResultList(null, uuid);
+			assertThat(toUnqualifiedVersionlessIdValues(results, 15, 25, false)).hasSize(10);
+
+			assertThat(interceptor.count())
+				.as("Hook should have fired again for the continuation pass")
+				.isGreaterThan(afterFirstPass);
+		} finally {
+			myInterceptorRegistry.unregisterInterceptor(interceptor);
+		}
+	}
+
+	/**
+	 * The count query is a separate query with its own execution, so the hook must fire for it too.
+	 */
+	@Test
+	public void testPreSearchQueryExecutionHookIsInvokedForCountQuery() {
+		create200Patients();
+
+		myStorageSettings.setSearchPreFetchThresholds(Arrays.asList(20, 50, 190));
+
+		PreSearchQueryExecutionCounter interceptor = new PreSearchQueryExecutionCounter();
+		myInterceptorRegistry.registerInterceptor(interceptor);
+		try {
+			SearchParameterMap params = new SearchParameterMap();
+			params.add("active", new TokenParam(null, "true"));
+			params.setSummaryMode(SummaryEnum.COUNT);
+			IBundleProvider results = myPatientDao.search(params);
+			assertEquals(200, results.size().intValue());
+
+			assertThat(interceptor.count())
+				.as("Hook should have fired for the count query")
+				.isGreaterThanOrEqualTo(1);
+			assertThat(interceptor.getInvocations().get(0).get("active"))
+				.as("Hook should be handed the search being executed")
+				.isNotNull();
+		} finally {
+			myInterceptorRegistry.unregisterInterceptor(interceptor);
+		}
 	}
 
 	@Test

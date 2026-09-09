@@ -72,6 +72,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -291,6 +292,69 @@ public class SearchCoordinatorSvcImplTest extends BaseSearchSvc {
 		assertEquals("10", resources.get(0).getIdElement().getValueAsString());
 		assertEquals("39", resources.get(29).getIdElement().getValueAsString());
 
+	}
+
+	/**
+	 * The pre-fetch thresholds used to size a search pass must come from the
+	 * {@link ISearchPreFetchThresholdProvider}, not from {@link JpaStorageSettings} directly, so
+	 * that a server can vary them per search. Here the provider returns a first threshold of 100
+	 * while the storage settings are left at their default of 13, and the search builder must be
+	 * asked for 101 results (threshold + 1) rather than 14.
+	 */
+	@Test
+	public void testPreFetchThresholdsComeFromProviderNotStorageSettings() {
+		initPartitionHelperSearchType();
+		initSearches();
+		initAsyncSearches();
+
+		assertEquals(13, myStorageSettings.getSearchPreFetchThresholds().get(0),
+			"Precondition: storage settings should still hold the default first threshold");
+
+		SearchParameterMap params = new SearchParameterMap();
+		params.add("name", new StringParam("ANAME"));
+
+		List<JpaPid> pids = createPidSequence(800);
+		SlowIterator iter = new SlowIterator(pids.iterator(), 1);
+		when(mySearchBuilder.createQuery(same(params), any(), any(), nullable(RequestPartitionId.class))).thenReturn(iter);
+		mockSearchTask((theResourceType, theParams) -> List.of(100, -1));
+
+		IBundleProvider result = mySvc.registerSearch(myCallingDao, params, "Patient", new CacheControlDirective(), null);
+		assertNotNull(result.getUuid());
+
+		verify(mySearchBuilder).setMaxResultsToFetch(eq(101));
+		verify(mySearchBuilder, never()).setMaxResultsToFetch(eq(14));
+	}
+
+	/**
+	 * The resource type and search passed to the provider must be the ones being searched for, since
+	 * an implementation is expected to key its thresholds off them.
+	 */
+	@Test
+	public void testPreFetchThresholdProviderReceivesResourceTypeAndParams() {
+		initPartitionHelperSearchType();
+		initSearches();
+		initAsyncSearches();
+
+		SearchParameterMap params = new SearchParameterMap();
+		params.add("name", new StringParam("ANAME"));
+
+		List<JpaPid> pids = createPidSequence(30);
+		SlowIterator iter = new SlowIterator(pids.iterator(), 1);
+		when(mySearchBuilder.createQuery(same(params), any(), any(), nullable(RequestPartitionId.class))).thenReturn(iter);
+
+		List<String> observedResourceTypes = new ArrayList<>();
+		List<SearchParameterMap> observedParams = new ArrayList<>();
+		mockSearchTask((theResourceType, theParams) -> {
+			observedResourceTypes.add(theResourceType);
+			observedParams.add(theParams);
+			return List.of(100, -1);
+		});
+
+		mySvc.registerSearch(myCallingDao, params, "Patient", new CacheControlDirective(), null);
+
+		assertThat(observedResourceTypes).containsOnly("Patient");
+		assertThat(observedParams).isNotEmpty();
+		assertThat(observedParams.get(0).get("name")).isNotNull();
 	}
 
 	private void initPartitionHelperSearchType() {
@@ -634,6 +698,10 @@ public class SearchCoordinatorSvcImplTest extends BaseSearchSvc {
 	}
 
 	private void mockSearchTask() {
+		mockSearchTask(new StorageSettingsSearchPreFetchThresholdProvider(myStorageSettings));
+	}
+
+	private void mockSearchTask(ISearchPreFetchThresholdProvider preFetchThresholdProvider) {
 		IPagingProvider pagingProvider = mock(IPagingProvider.class);
 		lenient().when(pagingProvider.getMaximumPageSize())
 			.thenReturn(500);
@@ -651,7 +719,8 @@ public class SearchCoordinatorSvcImplTest extends BaseSearchSvc {
 							mySearchResultCacheSvc,
 							myStorageSettings,
 							mySearchCacheSvc,
-							pagingProvider
+							pagingProvider,
+							preFetchThresholdProvider
 						);
 					}
 					case SearchConfig.CONTINUE_TASK -> {
@@ -665,6 +734,7 @@ public class SearchCoordinatorSvcImplTest extends BaseSearchSvc {
 							myStorageSettings,
 							mySearchCacheSvc,
 							pagingProvider,
+							preFetchThresholdProvider,
 							myExceptionSvc
 						);
 					}
