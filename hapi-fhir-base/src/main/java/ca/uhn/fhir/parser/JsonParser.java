@@ -1924,6 +1924,17 @@ public class JsonParser extends BaseParser implements IJsonLikeParser {
 
 				BaseRuntimeElementDefinition<?> def = myDef.getChildElementDefinitionByDatatype(myValue.getClass());
 				if (def.getChildType() == ChildTypeEnum.RESOURCE_BLOCK) {
+					/*
+					 * FUT1-25450 accept Extension.id on block-typed declared extensions.
+					 *
+					 * Extension.id for a block-typed declared extension lives on the block instance
+					 * (see ParserState.DeclaredExtensionState). Value-typed extensions are left as-is:
+					 * their value already carries its own id and writing it here would duplicate it.
+					 */
+					String extensionId = getCompositeElementId(myValue);
+					if (isNotBlank(extensionId)) {
+						JsonParser.write(theEventWriter, "id", extensionId);
+					}
 					extractAndWriteExtensionsAsDirectChild(
 							myValue,
 							theEventWriter,

@@ -477,6 +477,14 @@ class ParserState<T> {
 				// This can be ignored
 				return;
 			}
+			// FUT1-25450 accept Extension.id on block-typed declared extensions
+			if (theName.equals("id") && myDefinition.isChildResourceBlock()) {
+				// XML: <extension id="..." url="..."> on a block-typed declared extension. Attributes arrive
+				// before any child element, so the block instance must be created here.
+				ensureBlockInstance();
+				setElementId(myChildInstance, theValue);
+				return;
+			}
 			super.attributeValue(theName, theValue);
 		}
 
@@ -487,6 +495,21 @@ class ParserState<T> {
 
 		@Override
 		public void enteringNewElement(String theNamespaceUri, String theLocalPart) throws DataFormatException {
+			// FUT1-25450 accept Extension.id on block-typed declared extensions
+			if (theLocalPart.equals("id") && myDefinition.isChildResourceBlock()) {
+				// JSON: "id" is a plain property of the extension object and may appear before or after the
+				// child "extension" array. The block instance is otherwise created lazily on the first child
+				// extension, so make sure it exists before the id is applied.
+				ensureBlockInstance();
+				if (myChildInstance instanceof IBaseElement) {
+					push(new ElementIdState(getPreResourceState(), (IBaseElement) myChildInstance));
+					return;
+				} else if (myChildInstance instanceof IIdentifiableElement) {
+					push(new IdentifiableElementIdState(getPreResourceState(), (IIdentifiableElement) myChildInstance));
+					return;
+				}
+			}
+
 			BaseRuntimeElementDefinition<?> target = myDefinition.getChildByName(theLocalPart);
 			if (target == null) {
 				myErrorHandler.unknownElement(null, theLocalPart);
@@ -532,15 +555,37 @@ class ParserState<T> {
 			RuntimeChildDeclaredExtensionDefinition declaredExtension =
 					myDefinition.getChildExtensionForUrl(theUrlAttr);
 			if (declaredExtension != null) {
-				if (myChildInstance == null) {
-					myChildInstance = newInstance(myDefinition);
-					myDefinition.getMutator().addValue(myParentInstance, myChildInstance);
-				}
+				// FUT1-25450 the block instance is created by the shared ensureBlockInstance()
+				ensureBlockInstance();
 				BaseState newState =
 						new DeclaredExtensionState(getPreResourceState(), declaredExtension, myChildInstance);
 				push(newState);
 			} else {
 				super.enteringNewElementExtension(theElement, theUrlAttr, theIsModifier, baseServerUrl);
+			}
+		}
+
+		/**
+		 * FUT1-25450 accept Extension.id on block-typed declared extensions.
+		 *
+		 * <p>The block instance used to be created lazily when the first child extension arrived. An
+		 * Extension.id may arrive before any child, so creation is shared and idempotent.
+		 */
+		private void ensureBlockInstance() {
+			if (myChildInstance == null) {
+				myChildInstance = newInstance(myDefinition);
+				myDefinition.getMutator().addValue(myParentInstance, myChildInstance);
+			}
+		}
+
+		/**
+		 * FUT1-25450 accept Extension.id on block-typed declared extensions.
+		 */
+		private void setElementId(IBase theTarget, String theId) {
+			if (theTarget instanceof IBaseElement) {
+				((IBaseElement) theTarget).setId(theId);
+			} else if (theTarget instanceof IIdentifiableElement) {
+				((IIdentifiableElement) theTarget).setElementSpecificId(theId);
 			}
 		}
 

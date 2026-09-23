@@ -159,6 +159,16 @@ public class RuntimeChildDeclaredExtensionDefinition extends RuntimeChildChoiceD
 		return myUrlToChildExtension.get(theUrl);
 	}
 
+	/**
+	 * FUT1-25450 accept Extension.id on block-typed declared extensions.
+	 *
+	 * @return true if this declared extension is modelled as a <code>@Block</code> (a complex extension
+	 *         holding child extensions) rather than as a single <code>value[x]</code>.
+	 */
+	public boolean isChildResourceBlock() {
+		return myChildResourceBlock != null;
+	}
+
 	@Override
 	public String getExtensionUrl() {
 		return myExtensionUrl;
