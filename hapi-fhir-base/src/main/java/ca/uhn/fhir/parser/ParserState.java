@@ -482,8 +482,9 @@ class ParserState<T> {
 				// XML: <extension id="..." url="..."> on a block-typed declared extension. Attributes arrive
 				// before any child element, so the block instance must be created here.
 				ensureBlockInstance();
-				setElementId(myChildInstance, theValue);
-				return;
+				if (setElementId(myChildInstance, theValue)) {
+					return;
+				}
 			}
 			super.attributeValue(theName, theValue);
 		}
@@ -497,9 +498,14 @@ class ParserState<T> {
 		public void enteringNewElement(String theNamespaceUri, String theLocalPart) throws DataFormatException {
 			// FUT1-25450 accept Extension.id on block-typed declared extensions
 			if (theLocalPart.equals("id") && myDefinition.isChildResourceBlock()) {
-				// JSON: "id" is a plain property of the extension object and may appear before or after the
-				// child "extension" array. The block instance is otherwise created lazily on the first child
-				// extension, so make sure it exists before the id is applied.
+				// In JSON "id" is a plain property of the extension object and may appear before or after
+				// the child "extension" array. The block instance is otherwise created lazily on the first
+				// child extension, so make sure it exists before the id is applied.
+				//
+				// This method is shared with the XML parser, which routes child elements through it too, so
+				// the non-FHIR form <extension><id value="..."/></extension> is accepted as well. That is
+				// what ExtensionState#enteringNewElement below already does for undeclared extensions, so
+				// declared extensions are deliberately kept no stricter than undeclared ones.
 				ensureBlockInstance();
 				if (myChildInstance instanceof IBaseElement) {
 					push(new ElementIdState(getPreResourceState(), (IBaseElement) myChildInstance));
@@ -580,13 +586,23 @@ class ParserState<T> {
 
 		/**
 		 * FUT1-25450 accept Extension.id on block-typed declared extensions.
+		 *
+		 * <p>Every <code>@Block</code> type in the model extends <code>BackboneElement</code> and so
+		 * implements {@link IBaseElement}. The caller falls back to {@link BaseState#attributeValue} when
+		 * this returns false, so a block type implementing neither interface is reported through the error
+		 * handler rather than silently dropping the id.
+		 *
+		 * @return true if the id was applied to theTarget.
 		 */
-		private void setElementId(IBase theTarget, String theId) {
+		private boolean setElementId(IBase theTarget, String theId) {
 			if (theTarget instanceof IBaseElement) {
 				((IBaseElement) theTarget).setId(theId);
+				return true;
 			} else if (theTarget instanceof IIdentifiableElement) {
 				((IIdentifiableElement) theTarget).setElementSpecificId(theId);
+				return true;
 			}
+			return false;
 		}
 
 		@Override
