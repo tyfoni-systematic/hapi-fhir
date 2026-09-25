@@ -1924,6 +1924,23 @@ public class JsonParser extends BaseParser implements IJsonLikeParser {
 
 				BaseRuntimeElementDefinition<?> def = myDef.getChildElementDefinitionByDatatype(myValue.getClass());
 				if (def.getChildType() == ChildTypeEnum.RESOURCE_BLOCK) {
+					/*
+					 * FUT1-25450 accept Extension.id on block-typed declared extensions.
+					 *
+					 * Extension.id for a block-typed declared extension lives on the block instance
+					 * (see ParserState.DeclaredExtensionState).
+					 *
+					 * Value-typed declared extensions are out of scope: the model gives them no object of
+					 * their own to hold Extension.id, and the parser rejects one (see
+					 * DeclaredExtensionIdR4Test#testParseJson_valueTypedExtensionWithId_stillRejected). Note
+					 * that JSON does not persist their element id at all today - managePrimitiveExtension()
+					 * writes the _value[x] companion object only when the value carries extensions, never
+					 * for an id alone.
+					 */
+					String extensionId = getCompositeElementId(myValue);
+					if (isNotBlank(extensionId)) {
+						JsonParser.write(theEventWriter, "id", extensionId);
+					}
 					extractAndWriteExtensionsAsDirectChild(
 							myValue,
 							theEventWriter,
